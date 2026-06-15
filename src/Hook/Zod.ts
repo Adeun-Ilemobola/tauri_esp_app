@@ -1,0 +1,30 @@
+import { z } from "zod";
+
+export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
+export const LedPayloadScheme    = z.object({ state: z.boolean() });
+export const LogPayloadScheme    = z.object({ message: z.string() });
+
+const messageBase = {
+  id: z.string(),
+  version: z.string(),
+  kind: z.enum(["registered", "event", "log"]),
+};
+
+export const SerialMessageScheme = z.discriminatedUnion("moduletype", [
+  z.object({ ...messageBase, moduletype: z.literal("button"), payload: ButtonPayloadScheme }),
+  z.object({ ...messageBase, moduletype: z.literal("led"),    payload: LedPayloadScheme }),
+  z.object({ ...messageBase, moduletype: z.literal("log"),    payload: LogPayloadScheme }),
+]);
+export type SerialMessageType = z.infer<typeof SerialMessageScheme>;
+
+
+const cmdBase = {
+  kind: z.literal("CMD"),
+  id: z.string(),
+};
+
+export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
+  z.object({ ...cmdBase, moduletype: z.literal("button"), payload: ButtonPayloadScheme }),
+  z.object({ ...cmdBase, moduletype: z.literal("led"),    payload: LedPayloadScheme }),
+]);
+export type SerialCMDType = z.infer<typeof SerialCMDScheme>;
