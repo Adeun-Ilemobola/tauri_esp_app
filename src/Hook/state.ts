@@ -38,15 +38,15 @@ import { SerialCMDScheme, SerialMessageScheme, SerialMessageType } from "./Zod";
 
 
 
-async function serialPort() {
+export async function serialPort() {
 
-    
+
 
     const unlistenSerialRegistered = await listen<SerialMessageType>("serial-Registered", (event) => {
         const result = SerialMessageScheme.safeParse(event.payload);
         if (!result.success) {
             console.error("Bad serial message:", result.error, event.payload);
-             return
+            return
 
         }
         const data = result.data
@@ -70,7 +70,7 @@ async function serialPort() {
         const result = SerialMessageScheme.safeParse(event.payload);
         if (!result.success) {
             console.error("Bad serial message:", result.error, event.payload);
-             return
+            return
 
         }
         const data = result.data
@@ -86,17 +86,21 @@ async function serialPort() {
         console.error("Parse error:", event.payload);
     });
 
-    await invoke("start_serial_listener", {
-        portName: "COM3",
-        baudRate: 115200,
-    });
+    const list_port = await invoke<string[]>("list_serial_ports")
 
-    return () => {
-        unlistenSerialRegistered();
-        unlistenSerialLog();
-        unlistenError();
-        unlistenParseError();
-        unlistenSerialEvent();
+    // await invoke("start_serial_listener", {
+    //     portName: "COM3",
+    //     baudRate: 115200,
+    // });
+
+    return  {
+        Registered: unlistenSerialRegistered,
+        Log: unlistenSerialLog,
+
+        Error: unlistenError,
+        ParseError: unlistenParseError,
+        Event: unlistenSerialEvent,
+        ports: list_port
     };
 
 }

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use serialport::SerialPort;
+use std::thread::JoinHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SerialMessage {
@@ -54,4 +55,12 @@ pub struct LedPayload {
 
 pub struct SerialState {
    pub port: Mutex<Option<Box<dyn SerialPort>>>,
+}
+
+struct SerialRuntime {
+    port_name: Option<String>,
+    baud_rate: u32,
+    port: Mutex<Option<Box<dyn SerialPort>>>,
+    worker: Option<JoinHandle<()>>,
+
 }

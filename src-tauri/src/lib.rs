@@ -38,8 +38,9 @@ fn start_serial_listener(
     let reader_port = port.try_clone().map_err(|e| e.to_string())?;
 
     *state.port.lock().unwrap() = Some(port);
+    
 
-    thread::spawn(move || {
+   let handle=  thread::spawn(move || {
         let mut reader = BufReader::new(reader_port);
         let mut line = String::new();
         loop {
