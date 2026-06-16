@@ -20,7 +20,6 @@ pub enum MessageKind {
     Log,
 
 }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "moduletype", content = "payload", rename_all = "snake_case")]
 pub enum SerialPayload {
@@ -49,7 +48,7 @@ pub static mut SERIAL_MODE: bool = false;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LedPayload {
-    pub state: bool,
+    pub state: u32,
 }
 
 

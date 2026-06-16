@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
-export const LedPayloadScheme    = z.object({ state: z.boolean() });
+export const LedPayloadScheme    = z.object({ state: z.number() });
 export const LogPayloadScheme    = z.object({ message: z.string() });
 
 const messageBase = {
