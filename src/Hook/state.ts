@@ -1,108 +1,77 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { SerialCMDScheme, SerialMessageScheme, SerialMessageType } from "./Zod";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { useState, useEffect, useCallback } from "react";
+import { SerialMessageScheme, SerialMessageType } from "./Zod";
 
+export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
-// export type SerialMessage<K extends keyof SerialEventPayload> = {
-//     id: String,
-//     version: String,
-//     kind: MessageKind,
-//     payload: K
-// }
-// export type MessageKind = "Command" | "RegisteredEvent" | "Error" | "Log";
+export function useSerial() {
+    const [ports, setPorts] = useState<string[]>([]);
+    const [status, setStatus] = useState<ConnectionStatus>("disconnected");
+    const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        const unlisteners: UnlistenFn[] = [];
+        let cancelled = false;
 
-// export type SerialEventPayload = {
-//     Button: {
-//         pressed: boolean
-//     },
-//     Led: {
-//         state: boolean
-//     }
-// }
-// type AnyPayload = SerialEventPayload[keyof SerialEventPayload];
+        // helper: registers a listener and routes its unlisten fn to the right place
+        const track = (p: Promise<UnlistenFn>) =>
+            p.then((fn) => {
+                if (cancelled) fn();            // resolved too late — tear down now
+                else unlisteners.push(fn);
+            });
 
+        track(listen<SerialMessageType>("serial-Registered", (event) => {
+            const result = SerialMessageScheme.safeParse(event.payload);
+            if (!result.success) {
+                console.error("Bad serial message:", result.error, event.payload);
+                return;
+            }
+            console.log("Registered:", result.data);
+        }));
 
-// export type SerialEventCapability = {
-//     Led: {
-//         Command: {
-//             on: {},
-//             off: {}
-//         },
-//         Event: null
-//     },
-//     Button: null
-// }
+        track(listen<SerialMessageType>("serial-Event", (event) => {
+            const result = SerialMessageScheme.safeParse(event.payload);
+            if (!result.success) {
+                console.error("Bad serial message:", result.error, event.payload);
+                return;
+            }
+            console.log("Event:", result.data);
+        }));
 
+        track(listen<string>("serial-error", (event) => {
+            console.error("Serial error:", event.payload);
+        }));
 
+        track(listen("serial-parse-error", (event) => {
+            console.error("Parse error:", event.payload);
+        }));
 
-
-
-export async function serialPort() {
-
-
-
-    const unlistenSerialRegistered = await listen<SerialMessageType>("serial-Registered", (event) => {
-        const result = SerialMessageScheme.safeParse(event.payload);
-        if (!result.success) {
-            console.error("Bad serial message:", result.error, event.payload);
-            return
-
+        return () => {
+            cancelled = true;
+            unlisteners.forEach((fn) => fn());
+        };
+    }, []);
+    const listPorts = useCallback(async () => {
+        try {
+            const result = await invoke<string[]>("list_serial_ports");
+            setPorts(result);
+        } catch (e) {
+            console.error("Failed to list ports:", e);
         }
-        const data = result.data
-        console.log("Registered:" + data)
+    }, []);
 
-    })
-
-    const unlistenSerialLog = await listen<SerialMessageType>("serial-Log", (event) => {
-        const result = SerialMessageScheme.safeParse(event.payload);
-        if (!result.success) {
-            console.error("Bad serial message:", result.error, event.payload);
-            return
-
+    const connect = useCallback(async (portName: string, baudRate: number) => {
+        setStatus("connecting");
+        setError(null);
+        try {
+            await invoke("start_serial_listener", { portName, baudRate });
+            setStatus("connected");
+        } catch (e: any) {
+            setStatus("error");
+            setError(String(e));
         }
+    }, []);
 
-        const data = result.data
-        console.log("Log:" + data)
-
-    })
-    const unlistenSerialEvent = await listen<SerialMessageType>("serial-Event", (event) => {
-        const result = SerialMessageScheme.safeParse(event.payload);
-        if (!result.success) {
-            console.error("Bad serial message:", result.error, event.payload);
-            return
-
-        }
-        const data = result.data
-        console.log("Event:" + data)
-
-    })
-
-    const unlistenError = await listen<string>("serial-error", (event) => {
-        console.error("Serial error:", event.payload);
-    });
-
-    const unlistenParseError = await listen("serial-parse-error", (event) => {
-        console.error("Parse error:", event.payload);
-    });
-
-    const list_port = await invoke<string[]>("list_serial_ports")
-
-    // await invoke("start_serial_listener", {
-    //     portName: "COM3",
-    //     baudRate: 115200,
-    // });
-
-    return  {
-        Registered: unlistenSerialRegistered,
-        Log: unlistenSerialLog,
-
-        Error: unlistenError,
-        ParseError: unlistenParseError,
-        Event: unlistenSerialEvent,
-        ports: list_port
-    };
-
+    return { ports, status, error, listPorts, connect };
 }
-
-

@@ -34,7 +34,8 @@ pub struct ButtonEvent {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogPayload {
-   pub message:String
+   pub message:String,
+   pub rawjson:String
 }
 
 

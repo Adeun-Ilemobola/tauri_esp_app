@@ -1,7 +1,7 @@
 import "@/App.css";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { serialPort } from "../Hook/state";
+import { useSerial } from "../Hook/state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,23 +14,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 function App() {
+  const {ports ,listPorts} = useSerial();
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
-  const [ports, setPorts] = useState<string[]>([]);
+  
 
-  useEffect(() => {
-    get_all_port();
-  }, []);
+  useEffect(()=>{
+    listPorts();
+  },[])
+
+  
 
   async function greet() {
     setGreetMsg(await invoke("greet", { name }));
-    await get_all_port();
+   
   }
 
-  async function get_all_port() {
-    const items = await serialPort();
-    setPorts(items.ports);
-  }
+  
 
   return (
     <div className="p-6 space-y-6">

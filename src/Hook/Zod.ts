@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
 export const LedPayloadScheme    = z.object({ state: z.number() });
-export const LogPayloadScheme    = z.object({ message: z.string() });
+export const LogPayloadScheme    = z.object({ message: z.string() , rawjson:z.string() });
 
 const messageBase = {
   id: z.string(),
@@ -28,3 +28,9 @@ export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
   z.object({ ...cmdBase, moduletype: z.literal("led"),    payload: LedPayloadScheme }),
 ]);
 export type SerialCMDType = z.infer<typeof SerialCMDScheme>;
+
+export const PortConnectionScheme = z.object({
+  port: z.string().min(1, "Please select a port"),
+  baudRate: z.coerce.number().int().positive("Must be a positive integer"),
+});
+export type PortConnectionType = z.infer<typeof PortConnectionScheme>;

@@ -21,14 +21,14 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
 
 const navMain = [
-  { label: "Dashboard", icon: "⊞"    , path:"" },
-  { label: "Devices", icon: "⚡", badge: "3" , path:"Devices" },
+  { label: "Dashboard", icon: "⊞", path: "" },
+  { label: "Devices", icon: "⚡", badge: "3", path: "Devices" },
   // { label: "Flash Firmware", icon: "↑" },
 ]
 
 const navSettings = [
-  { label: "Port Settings", icon: "⚙" , path:"PortSettings" },
-  { label: "Logs", icon: "☰" , path:"Logs" },
+  { label: "Port Settings", icon: "⚙", path: "PortSettings" },
+  { label: "Logs", icon: "☰", path: "Logs" },
 ]
 
 export function Layout() {
@@ -37,12 +37,14 @@ export function Layout() {
       <TooltipProvider>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset>
+          <SidebarInset className=" h-svh">
             <header className="flex h-12 items-center gap-2 border-b px-4">
               <SidebarTrigger />
               <span className="text-sm font-medium">ESP Tool</span>
             </header>
-            <Outlet />
+            <div className="flex-1 min-h-0 overflow-y-auto">   {/* the one real scroll container */}
+              <Outlet />
+            </div>
           </SidebarInset>
         </SidebarProvider>
       </TooltipProvider>
@@ -69,7 +71,7 @@ function AppSidebar() {
                   key={item.label}
                   onClick={() => {
                     const path = item.path.trim()
-                    navigate(path === "Dashboard" ? "": path)
+                    navigate(path === "Dashboard" ? "" : path)
 
                   }}
                 >
