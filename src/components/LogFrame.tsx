@@ -1,3 +1,4 @@
+import { useListenStore } from "@/Hook/state";
 import { SerialMessageScheme, SerialMessageType } from "@/Hook/Zod";
 import { listen } from "@tauri-apps/api/event";
 
@@ -24,31 +25,16 @@ const fakeLogMessages: LogMessage[] = [
 ];
 
 export default function LogFrame() {
-    const [logs, setLogs] = useState<LogMessage[]>(fakeLogMessages)
+    // const [logs, setLogs] = useState<LogMessage[]>(fakeLogMessages)
+    const  {logs} = useListenStore()
 
-    React.useEffect(() => {
-        let unlisten: (() => void) | undefined;
-        listen<SerialMessageType>("serial-Log", (event) => {
-            const result = SerialMessageScheme.safeParse(event.payload);
-            if (!result.success) {
-                console.error("Bad serial message:", result.error, event.payload);
-                return;
-            }
-            const data = result.data;
-            if (data.moduletype === "log") {
-                setLogs((prev) => [...prev, data]);
-            } else {
-                console.log("bad data:", data);
-            }
-        }).then((fn) => { unlisten = fn; });
-        return () => { unlisten?.(); };
-    }, []);
+    
 
     return <LogFramePage logs={logs} />;
 }
 
 
-function LogFramePage({ logs }: { logs: LogMessage[] }) {
+function LogFramePage({ logs }: { logs: SerialMessageType[] }) {
     return (
         <main className="flex flex-col gap-0.5 p-3 w-full">
             <div className="flex flex-row gap-2 justify-end">
@@ -71,9 +57,8 @@ function LogFramePage({ logs }: { logs: LogMessage[] }) {
                             }`}>
                                 {log.kind}
                             </span>
-                            <span className="break-all  text-base">{log.payload.message}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground/60 pl-1 break-all">{log.payload.rawjson}</span>
+                        <span className="text-sm text-muted-foreground/60 pl-1 break-all">{JSON.stringify(log)}</span>
                     </div>
                 ))}
             </div>

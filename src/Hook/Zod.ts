@@ -34,3 +34,16 @@ export const PortConnectionScheme = z.object({
   baudRate: z.coerce.number().int().positive("Must be a positive integer"),
 });
 export type PortConnectionType = z.infer<typeof PortConnectionScheme>;
+
+type ModuleType = SerialMessageType["moduletype"];
+
+type OnlyModules<T extends ModuleType> = Extract<
+  SerialMessageType,
+  { moduletype: T }
+>;
+
+export type BasicModules = OnlyModules<"led" | "button">;
+export function isBasicModule(message: SerialMessageType): message is BasicModules {
+  return message.moduletype === "led" 
+  || message.moduletype === "button";
+}

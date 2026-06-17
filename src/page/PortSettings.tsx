@@ -13,16 +13,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useSerial } from '@/Hook/state';
+import { usePortStore, useSerial } from '@/Hook/state';
+import { PortConnectionScheme, PortConnectionType } from '@/Hook/Zod';
 import { useEffect, useState } from 'react'
 
 export default function PortSettings() {
-  const {ports , listPorts}  =useSerial()
-  const [baudRate, setbaudRate] = useState<number>(115200)
-  useEffect(()=>{
-      listPorts();
-    },[])
+  const { portInfo, connect, status, error , listPorts , getPorts , setPortInfo } = usePortStore()
+  
+
+  useEffect(() => {
+    getPorts()
+  }, [])
   function MakeConnect() {
+    const val = PortConnectionScheme.safeParse(portInfo)
+    if (val.success) {
+      connect(
+        val.data.port,
+        val.data.baudRate
+      )
+
+    }
 
   }
 
@@ -41,16 +51,24 @@ export default function PortSettings() {
               Ports
             </Label>
 
-            <Select>
+            <Select
+              value={portInfo.port}
+              onValueChange={((val) => {
+                if (val === "__none__") {
+                  return
+                }
+                setPortInfo({port:val})
+              })}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="ports" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {ports.length === 0 ? (
+                  {listPorts.length === 0 ? (
                     <SelectItem value="__none__" disabled>No ports available</SelectItem>
                   ) : (
-                    ports.map(port => (
+                    listPorts.map(port => (
                       <SelectItem key={port} value={port}>{port}</SelectItem>
                     ))
                   )}
@@ -65,10 +83,13 @@ export default function PortSettings() {
               baud Rate
             </Label>
             <Input
+              value={portInfo.baudRate}
               onChange={(e) => {
                 const val = e.target.value
-                
-
+                const toNum = Number(val)
+                if (!isNaN(toNum)) {
+                  setPortInfo({ baudRate: toNum })
+                }
               }}
 
             />
@@ -77,9 +98,27 @@ export default function PortSettings() {
         </div>
 
 
-        <Button>
-          Connect to port
-        </Button>
+        <div className=' flex flex-col gap-2'>
+          <Button
+          onClick={()=>{
+            MakeConnect()
+          }}
+          >
+            Connect to port
+          </Button>
+          <p>
+            {status}
+          </p>
+
+          {error && (<>
+            <p className=' text-amber-700'>
+              {error}
+
+            </p>
+
+          </>)}
+
+        </div>
 
       </div>
 
