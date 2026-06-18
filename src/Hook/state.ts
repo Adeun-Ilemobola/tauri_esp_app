@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useState, useEffect, useCallback } from "react";
-import { BasicModules, isBasicModule, PortConnectionScheme, PortConnectionType, SerialMessageScheme, SerialMessageType } from "./Zod";
+import { BasicModules, isBasicModule, PortConnectionScheme, PortConnectionType, sendSerialCommand, SerialMessageScheme, SerialMessageType } from "./Zod";
 import { forwardConsole } from "../lib/logging";
 import { debug, info, warn, error as logError } from "@tauri-apps/plugin-log";
 
@@ -85,6 +85,7 @@ export const usePortStore = create<PortStore>((set, get) => ({
             console.info(`[PortStore] connected to ${valid.data.port} at ${valid.data.baudRate} baud`);
             set({ status: "connected", commitTime: new Date() });
             useListenStore.getState().startListeners();
+            
             return true;
         } catch (e: any) {
             console.error("[PortStore] connect failed:", String(e));

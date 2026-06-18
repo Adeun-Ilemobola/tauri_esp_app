@@ -39,7 +39,10 @@ pub struct LogPayload {
     pub message: String,
     pub rawjson: String,
 }
-
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LedPayload {
+    pub state: u32,
+}
 #[derive(Debug, Serialize, Clone)]
 pub struct SerialParseError {
     pub raw: String,
@@ -48,10 +51,7 @@ pub struct SerialParseError {
 
 pub static mut SERIAL_MODE: bool = false;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LedPayload {
-    pub state: u32,
-}
+
 pub struct SerialRuntime {
     pub port_name: Option<String>,
     pub baud_rate: u32,
@@ -92,6 +92,6 @@ pub struct SerialState {
     pub runtime: Mutex<Option<SerialRuntime>>,
 }
 
-pub const MAXBACTH:usize = 100;
+pub const MAXBACTH:usize = 500;
 pub const MAX_TIME_BETEEN:u128 = 75;
 

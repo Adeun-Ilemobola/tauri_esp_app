@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 
 export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
@@ -23,11 +24,51 @@ const cmdBase = {
   id: z.string(),
 };
 
-export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
-  z.object({ ...cmdBase, moduletype: z.literal("button"), payload: ButtonPayloadScheme }),
-  z.object({ ...cmdBase, moduletype: z.literal("led"),    payload: LedPayloadScheme }),
+export const LedCommandPayloadScheme = z.discriminatedUnion("command", [
+  z.object({
+    command: z.literal("set_state"),
+    state: z.number().int(),
+  }),
+
+  z.object({
+    command: z.literal("toggle"),
+  }),
 ]);
+
+
+
+export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
+  z.object({
+    ...cmdBase,
+    moduletype: z.literal("led"),
+    payload: LedCommandPayloadScheme,
+  }),
+]);
+
 export type SerialCMDType = z.infer<typeof SerialCMDScheme>;
+
+export async function sendSerialCommand(command: SerialCMDType) {
+  const validCommand = SerialCMDScheme.parse(command);
+
+  await invoke("send_serial_command", {
+    data: validCommand,
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const PortConnectionScheme = z.object({
   port: z.string().min(1, "Please select a port"),
@@ -37,7 +78,7 @@ export type PortConnectionType = z.infer<typeof PortConnectionScheme>;
 
 type ModuleType = SerialMessageType["moduletype"];
 
-type OnlyModules<T extends ModuleType> = Extract<
+export type OnlyModules<T extends ModuleType> = Extract<
   SerialMessageType,
   { moduletype: T }
 >;

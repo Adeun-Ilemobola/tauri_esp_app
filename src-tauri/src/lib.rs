@@ -1,6 +1,6 @@
 mod shared_types;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use crate::shared_types::command::CommandPayload;
+use crate::shared_types::command::CommandEnvelope;
 use crate::shared_types::event::{
     MessageKind, SerialMessage, SerialParseError, SerialPayload, SerialRuntime, SerialState,
     MAXBACTH, MAX_TIME_BETEEN,
@@ -321,19 +321,18 @@ fn log_payload(payload: &SerialPayload) {
 }
 
 #[tauri::command]
-fn send_serial_command(state: State<SerialState>, data: CommandPayload) -> Result<(), String> {
+fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Result<(), String> {
     log::info!(
         "[send_serial_command] Sending command — kind='{}' id='{}' payload={:?}",
         data.kind,
         data.id,
-        data.payload
+        data.command
     );
-
     log::info!(
         "[send_serial_command] Sending — kind='{:?}' id='{}' payload={:?}",
         data.kind,
         data.id,
-        data.payload
+        data.command
     );
 
     let mut guard = state.runtime.lock().unwrap();
@@ -341,7 +340,6 @@ fn send_serial_command(state: State<SerialState>, data: CommandPayload) -> Resul
         log::error!("[send_serial_command] No serial port connected");
         "Serial port is not connected".to_string()
     })?;
-
     let mut message = serde_json::to_string(&data).map_err(|err| {
         log::error!("[send_serial_command] Serialization failed: {err}");
         err.to_string()
