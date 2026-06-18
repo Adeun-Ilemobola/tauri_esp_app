@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
+import { useListenStore } from "./Hook/state";
 
 const navMain = [
   { label: "Dashboard", icon: "⊞", path: "" },
@@ -54,6 +55,7 @@ export function Layout() {
 
 function AppSidebar() {
   const navigate = useNavigate();
+  const modules= useListenStore((state)=> state.modules)
 
   return (
     <Sidebar>
@@ -79,7 +81,7 @@ function AppSidebar() {
                     <span>{item.icon}</span>
                     <span>{item.label}</span>
                   </SidebarMenuButton>
-                  {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+                  {item.badge && <SidebarMenuBadge>{modules.length}</SidebarMenuBadge>}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

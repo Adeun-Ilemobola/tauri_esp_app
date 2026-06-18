@@ -3,12 +3,14 @@ mod shared_types;
 use crate::shared_types::command::CommandPayload;
 use crate::shared_types::event::{
     MessageKind, SerialMessage, SerialParseError, SerialPayload, SerialRuntime, SerialState,
+    MAXBACTH, MAX_TIME_BETEEN,
 };
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
+use std::time::Instant;
 use std::{
     io::{BufRead, BufReader},
     thread,
@@ -49,6 +51,55 @@ fn stop_runtime(state: State<SerialState>) -> Result<(), String> {
         log::info!("[stop_runtime] Serial runtime stopped");
     }
     Ok(())
+}
+
+fn flush(batch: &mut Vec<SerialMessage>, app: &AppHandle) {
+    for event in batch.iter_mut() {
+        match &event.kind {
+            MessageKind::Registered => {
+                log::info!(
+                    "[serial-reader] Module REGISTERED — id='{}', payload={:?}",
+                    event.id,
+                    event.payload
+                );
+                let emit_result = app.emit("serial_registered", &event);
+                log::debug!(
+                    "[serial-reader] Emitted 'serial_registered' for id='{}': {:?}",
+                    event.id,
+                    emit_result
+                );
+            }
+
+            MessageKind::Event => {
+                log::info!(
+                    "[serial-reader] Module EVENT — id='{}', payload={:?}",
+                    event.id,
+                    event.payload
+                );
+                let emit_result = app.emit("serial_Event", &event);
+                log::debug!(
+                    "[serial-reader] Emitted 'serial_Event' for id='{}': {:?}",
+                    event.id,
+                    emit_result
+                );
+            }
+
+            MessageKind::Log => {
+                log::info!(
+                    "[serial-reader] Module LOG — id='{}', payload={:?}",
+                    event.id,
+                    event.payload
+                );
+                let emit_result = app.emit("serial_log", &event);
+                log::debug!(
+                    "[serial-reader] Emitted 'serial-log' for id='{}': {:?}",
+                    event.id,
+                    emit_result
+                );
+            }
+        }
+    }
+    batch.clear();
 }
 
 #[tauri::command]
@@ -110,6 +161,9 @@ fn start_serial_listener(
         let mut buf: Vec<u8> = Vec::new();
         let mut line_count: u64 = 0;
 
+        let mut batch: Vec<SerialMessage> = Vec::new();
+        let mut first_stamp: Option<Instant> = None;
+
         loop {
             if stop_flag_thread.load(Ordering::Relaxed) {
                 break;
@@ -121,6 +175,20 @@ fn start_serial_listener(
                 }
 
                 Err(err) if err.kind() == std::io::ErrorKind::TimedOut => {
+                    if let Some(first) = first_stamp {
+                        let elapsed = first.elapsed();
+
+                        if !batch.is_empty() && elapsed.as_millis() >= MAX_TIME_BETEEN {
+                            log::info!(
+                                "[serial-reader] Flushing batch on timeout — len={} elapsed={}ms",
+                                batch.len(),
+                                elapsed.as_millis()
+                            );
+
+                            flush(&mut batch, &app);
+                            first_stamp = None;
+                        }
+                    }
                     continue;
                 }
 
@@ -158,49 +226,38 @@ fn start_serial_listener(
                                 "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
                                 line_count, event.id, event.version, event.kind
                             );
-                            log::debug!("[serial-reader] Full message: {:#?}", event);
-                            log_payload(&event.payload);
+                            // log::debug!("[serial-reader] Full message: {:#?}", event);
+                            // log_payload(&event.payload);
+                            let now = Instant::now();
 
-                            match &event.kind {
-                                MessageKind::Registered => {
-                                    log::info!(
-                                        "[serial-reader] Module REGISTERED — id='{}', payload={:?}",
-                                        event.id,
-                                        event.payload
-                                    );
-                                    let emit_result = app.emit("serial_registered", &event);
-                                    log::debug!(
-                                        "[serial-reader] Emitted 'serial_registered' for id='{}': {:?}",
-                                        event.id, emit_result
-                                    );
-                                }
+                            if batch.is_empty() {
+                                first_stamp = Some(Instant::now());
+                                log::debug!(
+                                    "[serial-reader] Starting new batch at line #{}",
+                                    line_count
+                                );
+                            }
 
-                                MessageKind::Event => {
-                                    log::info!(
-                                        "[serial-reader] Module EVENT — id='{}', payload={:?}",
-                                        event.id,
-                                        event.payload
-                                    );
-                                    let emit_result = app.emit("serial_Event", &event);
-                                    log::debug!(
-                                        "[serial-reader] Emitted 'serial_Event' for id='{}': {:?}",
-                                        event.id,
-                                        emit_result
-                                    );
-                                }
+                            batch.push(event);
 
-                                MessageKind::Log => {
+                            if let Some(first) = first_stamp {
+                                let elapsed = first.elapsed();
+                                let batch_full = batch.len() >= MAXBACTH;
+                                let batch_timed_out = elapsed.as_millis() >= MAX_TIME_BETEEN;
+                                if batch_full || batch_timed_out {
                                     log::info!(
-                                        "[serial-reader] Module LOG — id='{}', payload={:?}",
-                                        event.id,
-                                        event.payload
+                                        "[serial-reader] Flushing batch — len={} elapsed={}ms reason={}",
+                                        batch.len(),
+                                        elapsed.as_millis(),
+                                        if batch_full {
+                                            "max batch size reached"
+                                        } else {
+                                            "max wait time reached"
+                                        }
                                     );
-                                    let emit_result = app.emit("serial_log", &event);
-                                    log::debug!(
-                                        "[serial-reader] Emitted 'serial-log' for id='{}': {:?}",
-                                        event.id,
-                                        emit_result
-                                    );
+                                    flush(&mut batch, &app);
+
+                                    first_stamp = None;
                                 }
                             }
 

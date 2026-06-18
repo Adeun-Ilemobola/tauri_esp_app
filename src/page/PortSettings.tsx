@@ -18,8 +18,16 @@ import { PortConnectionScheme, PortConnectionType } from '@/Hook/Zod';
 import { useEffect, useState } from 'react'
 
 export default function PortSettings() {
-  const { portInfo, connect, status, error , listPorts , getPorts , setPortInfo } = usePortStore()
-  
+  const portInfo = usePortStore((state) => state.portInfo)
+  const connect = usePortStore((state) => state.connect)
+  const status = usePortStore((state) => state.status)
+  const error = usePortStore((state) => state.error)
+  const listPorts = usePortStore((state) => state.listPorts)
+  const getPorts = usePortStore((state) => state.getPorts)
+  const setPortInfo = usePortStore((state) => state.setPortInfo)
+
+
+
 
   useEffect(() => {
     getPorts()
@@ -57,7 +65,7 @@ export default function PortSettings() {
                 if (val === "__none__") {
                   return
                 }
-                setPortInfo({port:val})
+                setPortInfo({ port: val })
               })}
             >
               <SelectTrigger className="w-[180px]">
@@ -100,9 +108,9 @@ export default function PortSettings() {
 
         <div className=' flex flex-col gap-2'>
           <Button
-          onClick={()=>{
-            MakeConnect()
-          }}
+            onClick={() => {
+              MakeConnect()
+            }}
           >
             Connect to port
           </Button>

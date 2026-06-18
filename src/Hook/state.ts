@@ -113,6 +113,7 @@ export const usePortStore = create<PortStore>((set, get) => ({
         }
     }
 }))
+const MAX_VISIBLE_LOGS = 500;
 
 export const useListenStore = create<ListenStore>((set, get) => ({
     Unlisten: {
@@ -127,7 +128,9 @@ export const useListenStore = create<ListenStore>((set, get) => ({
 
     addLog: (log) => {
         console.debug(`[ListenStore] addLog — kind: ${log.kind}, id: ${log.id}`);
-        set((state) => ({ logs: [...state.logs, log] }));
+        set((state) => ({
+            logs: [...state.logs, log].slice(-MAX_VISIBLE_LOGS),
+        }));
     },
     clear: () => {
         console.info("[ListenStore] clearing logs and modules");
@@ -172,9 +175,23 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                     }
                     console.debug(`[ListenStore] received serial-Event — kind: ${result.data.kind}, id: ${result.data.id}`);
                     addLog(result.data);
-                    if (result.data.moduletype === "button" || result.data.moduletype === "led") {
+                    const fullresult = result.data;
+                    if (fullresult.kind === "event" && isBasicModule(fullresult)) {
                         console.info(`[ListenStore] module state update — id: ${result.data.id}, type: ${result.data.moduletype}`);
-                        set((state) => ({ modules: [...state.modules, result.data as BasicModules] }));
+                        set((state) => {
+                            const id = fullresult.id
+                            const m = state.modules.map(item => {
+                                if (item.id === id) {
+                                    return {
+                                        ...fullresult
+                                    }
+                                }
+                                return item
+
+                            })
+
+                            return { modules: m }
+                        });
                     }
                 });
 

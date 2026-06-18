@@ -80,7 +80,6 @@ impl SerialRuntime {
     pub fn stop(self) {
         let SerialRuntime { port, worker, stop_flag, .. } = self;
         stop_flag.store(true, Ordering::Relaxed);
-        // Drop the write port; the thread exits on the next timeout (~100 ms) via the flag.
         drop(port);
         if let Some(handle) = worker {
             let _ = handle.join();
@@ -92,3 +91,7 @@ pub struct SerialState {
     // pub port: Mutex<Option<Box<dyn SerialPort>>>,
     pub runtime: Mutex<Option<SerialRuntime>>,
 }
+
+pub const MAXBACTH:usize = 100;
+pub const MAX_TIME_BETEEN:u128 = 75;
+
