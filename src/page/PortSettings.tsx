@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { usePortStore, useSerial } from '@/Hook/state';
+import { usePortStore } from '@/Hook/state';
 import { PortConnectionScheme, PortConnectionType } from '@/Hook/Zod';
 import { useEffect, useState } from 'react'
 
@@ -25,9 +25,6 @@ export default function PortSettings() {
   const listPorts = usePortStore((state) => state.listPorts)
   const getPorts = usePortStore((state) => state.getPorts)
   const setPortInfo = usePortStore((state) => state.setPortInfo)
-
-
-
 
   useEffect(() => {
     getPorts()

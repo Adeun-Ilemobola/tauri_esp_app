@@ -36,13 +36,15 @@ interface PortStore {
 
 interface ListenStore {
     Unlisten: {
-        registered: UnlistenFn | null
-        Event: UnlistenFn | null
+        unlistenBatch: UnlistenFn | null
         error: UnlistenFn | null
         // parseError: UnlistenFn | null
     }
-    ListenersErr: boolean
+    ListenersErr: boolean;
+    isListening: boolean;
+
     startListeners: () => void;
+    stopListeners: () => void;
 
 
     // 
@@ -85,7 +87,7 @@ export const usePortStore = create<PortStore>((set, get) => ({
             console.info(`[PortStore] connected to ${valid.data.port} at ${valid.data.baudRate} baud`);
             set({ status: "connected", commitTime: new Date() });
             useListenStore.getState().startListeners();
-            
+
             return true;
         } catch (e: any) {
             console.error("[PortStore] connect failed:", String(e));
@@ -118,12 +120,14 @@ const MAX_VISIBLE_LOGS = 500;
 
 export const useListenStore = create<ListenStore>((set, get) => ({
     Unlisten: {
-        registered: null,
-        Event: null,
+        // registered: null,
+        // Event: null,
+        unlistenBatch: null,
         error: null,
         parseError: null,
     },
     ListenersErr: false,
+    isListening: false,
     logs: [],
     modules: [],
 
@@ -137,67 +141,131 @@ export const useListenStore = create<ListenStore>((set, get) => ({
         console.info("[ListenStore] clearing logs and modules");
         set({ logs: [], modules: [] });
     },
+    stopListeners: () => {
+        const { Unlisten } = get();
+        console.info("[ListenStore] stopping listeners");
+        Object.values(Unlisten).forEach((fn) => fn?.());
+        set({ Unlisten: { unlistenBatch: null, error: null } });
+    },
 
     startListeners: () => {
-        const { Unlisten, addLog } = get();
+        const { addLog } = get();
+        const { isListening } = get();
 
-        console.info("[ListenStore] starting listeners — tearing down existing ones first");
-        Object.values(Unlisten).forEach((fn) => fn?.());
+        if (isListening) {
+            console.info("[ListenStore] listeners already active");
+            return;
+        }
+
 
         (async () => {
             try {
-                const registered = await listen<SerialMessageType>("serial_registered", (event) => {
-                    const result = SerialMessageScheme.safeParse(event.payload);
-                    if (!result.success) {
-                        console.error("[ListenStore] serial-Registered parse failed:", result.error);
-                        return;
-                    }
-                    const fullresult = result.data;
+                // const registered = await listen<SerialMessageType>("serial_registered", (event) => {
+                //     const result = SerialMessageScheme.safeParse(event.payload);
+                //     if (!result.success) {
+                //         console.error("[ListenStore] serial-Registered parse failed:", result.error);
+                //         return;
+                //     }
+                //     const fullresult = result.data;
 
-                    if (fullresult.kind === "registered" && isBasicModule(fullresult)) {
-                        set((state) => {
-                            const modulesExist = state.modules.some((module) => module.id === fullresult.id);
-                            if (modulesExist) {
-                                console.debug(`[ListenStore] module ${fullresult.id} already registered, skipping`);
-                                return state;
-                            }
-                            console.info(`[ListenStore] new module registered — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
-                            return { modules: [...state.modules, fullresult] };
-                        });
-                    }
-                    addLog(result.data);
-                });
+                //     if (fullresult.kind === "registered" && isBasicModule(fullresult)) {
+                //         set((state) => {
+                //             const modulesExist = state.modules.some((module) => module.id === fullresult.id);
+                //             if (modulesExist) {
+                //                 console.debug(`[ListenStore] module ${fullresult.id} already registered, skipping`);
+                //                 return state;
+                //             }
+                //             console.info(`[ListenStore] new module registered — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                //             return { modules: [...state.modules, fullresult] };
+                //         });
+                //     }
+                //     addLog(result.data);
+                // });
 
-                const Event = await listen<SerialMessageType>("serial_Event", (event) => {
-                    const result = SerialMessageScheme.safeParse(event.payload);
-                    if (!result.success) {
-                        console.error("[ListenStore] serial-Event parse failed:", result.error);
-                        return;
-                    }
-                    console.debug(`[ListenStore] received serial-Event — kind: ${result.data.kind}, id: ${result.data.id}`);
-                    addLog(result.data);
-                    const fullresult = result.data;
-                    if (fullresult.kind === "event" && isBasicModule(fullresult)) {
-                        console.info(`[ListenStore] module state update — id: ${result.data.id}, type: ${result.data.moduletype}`);
-                        set((state) => {
-                            const id = fullresult.id
-                            const m = state.modules.map(item => {
-                                if (item.id === id) {
-                                    return {
-                                        ...fullresult
-                                    }
-                                }
-                                return item
+                // const Event = await listen<SerialMessageType>("serial_Event", (event) => {
+                //     const result = SerialMessageScheme.safeParse(event.payload);
+                //     if (!result.success) {
+                //         console.error("[ListenStore] serial-Event parse failed:", result.error);
+                //         return;
+                //     }
+                //     console.debug(`[ListenStore] received serial-Event — kind: ${result.data.kind}, id: ${result.data.id}`);
+                //     addLog(result.data);
+                //     const fullresult = result.data;
+                //     if (fullresult.kind === "event" && isBasicModule(fullresult)) {
+                //         console.info(`[ListenStore] module state update — id: ${result.data.id}, type: ${result.data.moduletype}`);
+                //         set((state) => {
+                //             const id = fullresult.id
+                //             const m = state.modules.map(item => {
+                //                 if (item.id === id) {
+                //                     return {
+                //                         ...fullresult
+                //                     }
+                //                 }
+                //                 return item
 
-                            })
+                //             })
 
-                            return { modules: m }
-                        });
-                    }
-                });
+                //             return { modules: m }
+                //         });
+                //     }
+                // });
 
                 const error = await listen<string>("serial_error", (event) => {
                     console.error("[ListenStore] serial-error from device:", event.payload);
+                });
+
+                const unlistenBatch = await listen<SerialMessageType[]>("serial_batch", (event) => {
+
+                    for (const msg of event.payload) {
+                        const result = SerialMessageScheme.safeParse(msg);
+                        if (!result.success) {
+                            console.error("[ListenStore] serial-Registered parse failed:", result.error);
+                            continue;
+                        }
+                        const fullresult = result.data;
+                        switch (fullresult.kind) {
+                            case "registered":
+                                if (isBasicModule(fullresult)) {
+                                    set((state) => {
+                                        const modulesExist = state.modules.some((module) => module.id === fullresult.id);
+                                        if (modulesExist) {
+                                            console.debug(`[ListenStore] module ${fullresult.id} already registered, skipping`);
+                                            return state;
+                                        }
+                                        console.info(`[ListenStore] new module registered — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                                        return { modules: [...state.modules, fullresult] };
+                                    });
+                                }
+                                break;
+                            case "event":
+                                if (isBasicModule(fullresult)) {
+                                    console.info(`[ListenStore] module state update — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                                    set((state) => {
+                                        const id = fullresult.id
+                                        const m = state.modules.map(item => {
+                                            if (item.id === id) {
+                                                return {
+                                                    ...fullresult
+                                                }
+                                            }
+                                            return item
+
+                                        })
+
+                                        return { modules: m }
+                                    });
+                                }
+                                break;
+                            case "log":
+                                console.debug(`[ListenStore] log message — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                                break;
+                            default:
+                                console.warn(`[ListenStore] unknown message kind: ${fullresult.kind}`);
+                        }
+                        addLog(result.data);
+                    }
+
+
                 });
 
                 // const parseError = await listen("serial-parse-error", (event) => {
@@ -205,7 +273,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                 // });
 
                 console.info("[ListenStore] all listeners registered successfully");
-                set({ Unlisten: { registered, Event, error }, ListenersErr: false });
+                set({ Unlisten: { unlistenBatch, error }, ListenersErr: false, isListening: true });
             } catch (e) {
                 console.error("[ListenStore] failed to start listeners:", e);
                 set({ ListenersErr: true });
@@ -214,73 +282,73 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     },
 }));
 
-export function useSerial() {
-    const [ports, setPorts] = useState<string[]>([]);
-    const [status, setStatus] = useState<ConnectionStatus>("disconnected");
-    const [error, setError] = useState<string | null>(null);
+// export function useSerial() {
+//     const [ports, setPorts] = useState<string[]>([]);
+//     const [status, setStatus] = useState<ConnectionStatus>("disconnected");
+//     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const unlisteners: UnlistenFn[] = [];
-        let cancelled = false;
+//     useEffect(() => {
+//         const unlisteners: UnlistenFn[] = [];
+//         let cancelled = false;
 
-        // helper: registers a listener and routes its unlisten fn to the right place
-        const track = (p: Promise<UnlistenFn>) =>
-            p.then((fn) => {
-                if (cancelled) fn();            // resolved too late — tear down now
-                else unlisteners.push(fn);
-            });
+//         // helper: registers a listener and routes its unlisten fn to the right place
+//         const track = (p: Promise<UnlistenFn>) =>
+//             p.then((fn) => {
+//                 if (cancelled) fn();            // resolved too late — tear down now
+//                 else unlisteners.push(fn);
+//             });
 
-        track(listen<SerialMessageType>("serial-Registered", (event) => {
-            const result = SerialMessageScheme.safeParse(event.payload);
-            if (!result.success) {
-                console.error("Bad serial message:", result.error, event.payload);
-                return;
-            }
-            console.log("Registered:", result.data);
-        }));
+//         track(listen<SerialMessageType>("serial-Registered", (event) => {
+//             const result = SerialMessageScheme.safeParse(event.payload);
+//             if (!result.success) {
+//                 console.error("Bad serial message:", result.error, event.payload);
+//                 return;
+//             }
+//             console.log("Registered:", result.data);
+//         }));
 
-        track(listen<SerialMessageType>("serial-Event", (event) => {
-            const result = SerialMessageScheme.safeParse(event.payload);
-            if (!result.success) {
-                console.error("Bad serial message:", result.error, event.payload);
-                return;
-            }
-            console.log("Event:", result.data);
-        }));
+//         track(listen<SerialMessageType>("serial-Event", (event) => {
+//             const result = SerialMessageScheme.safeParse(event.payload);
+//             if (!result.success) {
+//                 console.error("Bad serial message:", result.error, event.payload);
+//                 return;
+//             }
+//             console.log("Event:", result.data);
+//         }));
 
-        track(listen<string>("serial-error", (event) => {
-            console.error("Serial error:", event.payload);
-        }));
+//         track(listen<string>("serial-error", (event) => {
+//             console.error("Serial error:", event.payload);
+//         }));
 
-        track(listen("serial-parse-error", (event) => {
-            console.error("Parse error:", event.payload);
-        }));
+//         track(listen("serial-parse-error", (event) => {
+//             console.error("Parse error:", event.payload);
+//         }));
 
-        return () => {
-            cancelled = true;
-            unlisteners.forEach((fn) => fn());
-        };
-    }, []);
-    const listPorts = useCallback(async () => {
-        try {
-            const result = await invoke<string[]>("list_serial_ports");
-            setPorts(result);
-        } catch (e) {
-            console.error("Failed to list ports:", e);
-        }
-    }, []);
+//         return () => {
+//             cancelled = true;
+//             unlisteners.forEach((fn) => fn());
+//         };
+//     }, []);
+//     const listPorts = useCallback(async () => {
+//         try {
+//             const result = await invoke<string[]>("list_serial_ports");
+//             setPorts(result);
+//         } catch (e) {
+//             console.error("Failed to list ports:", e);
+//         }
+//     }, []);
 
-    const connect = useCallback(async (portName: string, baudRate: number) => {
-        setStatus("connecting");
-        setError(null);
-        try {
-            await invoke("start_serial_listener", { portName, baudRate });
-            setStatus("connected");
-        } catch (e: any) {
-            setStatus("error");
-            setError(String(e));
-        }
-    }, []);
+//     const connect = useCallback(async (portName: string, baudRate: number) => {
+//         setStatus("connecting");
+//         setError(null);
+//         try {
+//             await invoke("start_serial_listener", { portName, baudRate });
+//             setStatus("connected");
+//         } catch (e: any) {
+//             setStatus("error");
+//             setError(String(e));
+//         }
+//     }, []);
 
-    return { ports, status, error, listPorts, connect };
-}
+//     return { ports, status, error, listPorts, connect };
+// }

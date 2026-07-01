@@ -1,7 +1,6 @@
 import "@/App.css";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useSerial } from "../Hook/state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,18 +11,14 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { usePortStore } from "@/Hook/state";
 
 function App() {
-  const {ports ,listPorts} = useSerial();
+  const listPorts = usePortStore((state) => state.listPorts)
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   
 
-  useEffect(()=>{
-    listPorts();
-  },[])
-
-  
 
   async function greet() {
     setGreetMsg(await invoke("greet", { name }));
@@ -39,8 +34,8 @@ function App() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Serial port monitor</p>
         </div>
-        <Badge variant={ports.length > 0 ? "default" : "outline"}>
-          {ports.length} port{ports.length === 1 ? "" : "s"}
+        <Badge variant={listPorts.length > 0 ? "default" : "outline"}>
+          {listPorts.length} port{listPorts.length === 1 ? "" : "s"}
         </Badge>
       </div>
 
@@ -75,19 +70,19 @@ function App() {
         <CardHeader>
           <CardTitle>Serial Ports</CardTitle>
           <CardDescription>
-            {ports.length === 0
+            {listPorts.length === 0
               ? "No ports detected"
-              : `${ports.length} port${ports.length === 1 ? "" : "s"} available`}
+              : `${listPorts.length} port${listPorts.length === 1 ? "" : "s"} available`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {ports.length === 0 ? (
+          {listPorts.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Connect a device and refresh.
             </p>
           ) : (
             <div className="grid gap-2">
-              {ports.map((item) => (
+              {listPorts.map((item) => (
                 <div
                   key={item}
                   className="flex items-center justify-between rounded-3xl border bg-input/30 px-4 py-2"

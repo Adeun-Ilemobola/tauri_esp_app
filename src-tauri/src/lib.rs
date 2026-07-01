@@ -54,50 +54,12 @@ fn stop_runtime(state: State<SerialState>) -> Result<(), String> {
 }
 
 fn flush(batch: &mut Vec<SerialMessage>, app: &AppHandle) {
-    for event in batch.iter_mut() {
-        match &event.kind {
-            MessageKind::Registered => {
-                log::info!(
-                    "[serial-reader] Module REGISTERED — id='{}', payload={:?}",
-                    event.id,
-                    event.payload
-                );
-                let emit_result = app.emit("serial_registered", &event);
-                log::debug!(
-                    "[serial-reader] Emitted 'serial_registered' for id='{}': {:?}",
-                    event.id,
-                    emit_result
-                );
-            }
-
-            MessageKind::Event => {
-                log::info!(
-                    "[serial-reader] Module EVENT — id='{}', payload={:?}",
-                    event.id,
-                    event.payload
-                );
-                let emit_result = app.emit("serial_Event", &event);
-                log::debug!(
-                    "[serial-reader] Emitted 'serial_Event' for id='{}': {:?}",
-                    event.id,
-                    emit_result
-                );
-            }
-
-            MessageKind::Log => {
-                log::info!(
-                    "[serial-reader] Module LOG — id='{}', payload={:?}",
-                    event.id,
-                    event.payload
-                );
-                let emit_result = app.emit("serial_log", &event);
-                log::debug!(
-                    "[serial-reader] Emitted 'serial-log' for id='{}': {:?}",
-                    event.id,
-                    emit_result
-                );
-            }
-        }
+    if batch.is_empty() {
+        return;
+    }
+     
+    if let Err(err) = app.emit("serial_batch", &batch) {
+        log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
     }
     batch.clear();
 }
@@ -163,12 +125,10 @@ fn start_serial_listener(
 
         let mut batch: Vec<SerialMessage> = Vec::new();
         let mut first_stamp: Option<Instant> = None;
-
         loop {
             if stop_flag_thread.load(Ordering::Relaxed) {
                 break;
             }
-
             match reader.read_until(b'\n', &mut buf) {
                 Ok(0) => {
                     continue;

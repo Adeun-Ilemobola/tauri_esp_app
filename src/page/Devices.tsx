@@ -4,12 +4,16 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useListenStore } from '@/Hook/state'
+import { useListenStore, usePortStore } from '@/Hook/state'
 import { BasicModules, OnlyModules, sendSerialCommand } from '@/Hook/Zod'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 export default function Devices() {
   const modules = useListenStore((state) => state.modules)
+
+
+  
+
 
   return (
     <div className=' flex flex-col h-[88dvh] gap-2.5 p-3 overflow-y-auto'>
@@ -52,24 +56,25 @@ function LedCard({ info }: { info: OnlyModules<"led"> }) {
           value={data}
           onChange={(e) => {
             const raw = e.target.value;
-           
+
 
             setData(raw === "" ? 0 : parseInt(raw) || 0);
           }}
-          onKeyUp={(e) => {
-            if (e.key === 'Enter') {
-             const clanp = Math.min(Math.max(data , 0), 100)
-              sendSerialCommand({
-                id: info.id,
-                kind: "CMD",
-                moduletype: "led",
-                payload: {
-                  command: "set_state",
-                  state: clanp
-                }
-              })
+          onKeyDown={(e) => {
+            if (e.key != 'Enter') return;
+            e.preventDefault();
+            const clanp = Math.min(Math.max(data, 0), 100)
+            sendSerialCommand({
+              id: info.id,
+              kind: "CMD",
+              moduletype: "led",
+              payload: {
+                command: "set_state",
+                state: clanp
+              }
+            })
 
-            }
+
           }}
 
         />

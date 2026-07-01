@@ -92,6 +92,6 @@ pub struct SerialState {
     pub runtime: Mutex<Option<SerialRuntime>>,
 }
 
-pub const MAXBACTH:usize = 500;
-pub const MAX_TIME_BETEEN:u128 = 75;
+pub const MAXBACTH:usize = 250;
+pub const MAX_TIME_BETEEN:u128 = 33;
 
