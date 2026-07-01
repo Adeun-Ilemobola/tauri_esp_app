@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
-import { useListenStore } from "./Hook/state";
+import { useListenStore, usePortStore } from "./Hook/state";
+import { useEffect } from "react";
 
 const navMain = [
   { label: "Dashboard", icon: "⊞", path: "" },
@@ -33,6 +34,22 @@ const navSettings = [
 ]
 
 export function Layout() {
+  const  startListeners = useListenStore((state) => state.startListeners)
+  const  stopListeners = useListenStore((state) => state.stopListeners)
+  const  portInfo = usePortStore((state) => state.portInfo)
+
+  useEffect(() => {
+    if (!portInfo.port) {
+      stopListeners()
+      return
+    }
+    startListeners()
+
+    return () => {
+      stopListeners()
+    }
+  }, [portInfo.port])
+
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <TooltipProvider>
