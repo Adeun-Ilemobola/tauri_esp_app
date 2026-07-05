@@ -15,8 +15,13 @@ import { usePortStore } from "@/Hook/state";
 
 function App() {
   const listPorts = usePortStore((state) => state.listPorts)
+  const getPorts =  usePortStore((state)=> state.getPorts)
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+
+  useEffect(()=>{
+    getPorts()
+  } , [])
   
 
 

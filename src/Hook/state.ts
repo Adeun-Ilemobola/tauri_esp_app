@@ -211,7 +211,9 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                 // });
 
                 const error = await listen<string>("serial_error", (event) => {
-                    console.error("[ListenStore] serial-error from device:", event.payload);
+                   if (event.payload.trim().length > 0 ){
+                     console.error("[ListenStore] serial-error from device:", event.payload);
+                   }
                 });
 
                 const unlistenBatch = await listen<SerialMessageType[]>("serial_batch", (event) => {

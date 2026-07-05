@@ -2,8 +2,7 @@ mod shared_types;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use crate::shared_types::command::CommandEnvelope;
 use crate::shared_types::event::{
-    MessageKind, SerialMessage, SerialParseError, SerialPayload, SerialRuntime, SerialState,
-    MAXBACTH, MAX_TIME_BETEEN,
+    InComingEvent, MAX_TIME_BETEEN, MAXBACTH, MessageKind, SerialParseError, SerialRuntime, SerialState
 };
 
 use std::sync::{
@@ -53,7 +52,7 @@ fn stop_runtime(state: State<SerialState>) -> Result<(), String> {
     Ok(())
 }
 
-fn flush(batch: &mut Vec<SerialMessage>, app: &AppHandle) {
+fn flush(batch: &mut Vec<InComingEvent>, app: &AppHandle) {
     if batch.is_empty() {
         return;
     }
@@ -123,7 +122,7 @@ fn start_serial_listener(
         let mut buf: Vec<u8> = Vec::new();
         let mut line_count: u64 = 0;
 
-        let mut batch: Vec<SerialMessage> = Vec::new();
+        let mut batch: Vec<InComingEvent> = Vec::new();
         let mut first_stamp: Option<Instant> = None;
         loop {
             if stop_flag_thread.load(Ordering::Relaxed) {
@@ -180,7 +179,7 @@ fn start_serial_listener(
                         continue;
                     }
 
-                    match serde_json::from_str::<SerialMessage>(trimmed) {
+                    match serde_json::from_str::<InComingEvent>(trimmed) {
                         Ok(event) => {
                             log::info!(
                                 "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
@@ -262,23 +261,23 @@ fn start_serial_listener(
     Ok(())
 }
 
-fn log_payload(payload: &SerialPayload) {
-    match payload {
-        SerialPayload::Button(b) => {
-            log::info!("[payload] Type=Button  pressed={}", b.pressed);
-        }
-        SerialPayload::Led(l) => {
-            log::info!("[payload] Type=Led  state={}", l.state);
-        }
-        SerialPayload::Log(l) => {
-            log::info!(
-                "[payload] Type=Log  message={:?}  rawjson={:?}",
-                l.message,
-                l.rawjson
-            );
-        }
-    }
-}
+// fn log_payload(payload: &SerialPayload) {
+//     match payload {
+//         SerialPayload::Button(b) => {
+//             log::info!("[payload] Type=Button  pressed={}", b.pressed);
+//         }
+//         SerialPayload::Led(l) => {
+//             log::info!("[payload] Type=Led  state={}", l.state);
+//         }
+//         SerialPayload::Log(l) => {
+//             log::info!(
+//                 "[payload] Type=Log  message={:?}  rawjson={:?}",
+//                 l.message,
+//                 l.rawjson
+//             );
+//         }
+//     }
+// }
 
 #[tauri::command]
 fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Result<(), String> {

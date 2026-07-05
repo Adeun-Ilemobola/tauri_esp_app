@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serialport::SerialPort;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -7,15 +8,6 @@ use std::sync::{
 use std::thread::JoinHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SerialMessage {
-    pub id: String,
-    pub version: String,
-    pub kind: MessageKind,
-
-    #[serde(flatten)]
-    pub payload: SerialPayload,
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum MessageKind {
     Registered,
@@ -23,26 +15,19 @@ pub enum MessageKind {
     Log,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "moduletype", content = "payload", rename_all = "snake_case")]
-pub enum SerialPayload {
-    Button(ButtonEvent),
-    Led(LedPayload),
-    Log(LogPayload),
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ButtonEvent {
-    pub pressed: bool,
+pub struct InComingEvent {
+    pub id: String,
+    manuel_id:String,
+    pub version: String,
+    pub kind: MessageKind,
+    pub moduletype: String,
+    #[serde(flatten)]
+    pub payload: Value,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generated_info: Option<Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LogPayload {
-    pub message: String,
-    pub rawjson: String,
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LedPayload {
-    pub state: u32,
-}
 #[derive(Debug, Serialize, Clone)]
 pub struct SerialParseError {
     pub raw: String,

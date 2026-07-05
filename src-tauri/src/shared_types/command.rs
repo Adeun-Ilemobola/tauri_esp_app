@@ -1,14 +1,8 @@
 // use serde::{Deserialize, Serialize};
 // use crate::shared_types::event::SerialPayload;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub struct CommandPayload {
-//     pub kind: String,
-//     pub id: String,
-//     #[serde(flatten)]
-//     pub payload: SerialPayload,
-// }
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
