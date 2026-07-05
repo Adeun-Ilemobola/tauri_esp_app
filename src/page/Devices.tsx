@@ -2,18 +2,13 @@
 
 
 
-import ButtonM from '@/components/Modules/ButtonM'
+import {ButtonModule} from '@/components/Modules/ButtonModule'
 import { LedCard } from '@/components/Modules/led'
-import { useListenStore, usePortStore } from '@/Hook/state'
-import { BasicModules, OnlyModules, sendSerialCommand } from '@/Hook/Zod'
-import React, { useEffect, useState } from 'react'
+import { useListenStore } from '@/Hook/state'
+
 
 export default function Devices() {
   const modules = useListenStore((state) => state.modules)
-
-
-  
-
 
   return (
     <div className=' flex flex-col h-[88dvh] gap-2.5 p-3 overflow-y-auto'>
@@ -23,7 +18,7 @@ export default function Devices() {
             return <LedCard key={item.id} info={item} />
 
           case "button":
-            return <ButtonM key={item.id} info={item} />
+            return <ButtonModule key={item.id} info={item} />
 
           default:
             return null;

@@ -1,34 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { cmdBase, messageBase, OnlyModules, sendSerialCommand } from '@/Hook/Zod';
+import { OnlyModules, sendSerialCommand } from '@/Hook/Zod';
 import { useState } from 'react';
-import z from 'zod';
-
-export const LedPayloadScheme    = z.object({ state: z.number() });
-export const led_SerialMessageScheme = z.object({ ...messageBase, moduletype: z.literal("led"),    payload: LedPayloadScheme })
-
-
-
-export const LedCommandTypeScheme = z.discriminatedUnion("command", [
-  z.object({
-    command: z.literal("set_state"),
-    state: z.number().int(),
-  }),
-
-  z.object({
-    command: z.literal("toggle"),
-  }),
-]);
-
-export const   SerialCMDLed =z.object({
-    ...cmdBase,
-    moduletype: z.literal("led"),
-    payload: LedCommandTypeScheme,
-  })
-
-
-
 
 
 export function LedCard({ info }: { info: OnlyModules<"led"> }) {

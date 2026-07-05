@@ -1,13 +1,9 @@
-import { messageBase, OnlyModules } from "@/Hook/Zod";
-import z from "zod";
-
+import { OnlyModules } from "@/Hook/Zod";
 import { Badge } from "../ui/badge";
 
-export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
-export const ButtonSerialMessageScheme = z.object({ ...messageBase, moduletype: z.literal("button"), payload: ButtonPayloadScheme })
 
 
-export default function ButtonM({ info }: { info: OnlyModules<"button"> }) {
+export  function ButtonModule({ info }: { info: OnlyModules<"button"> }) {
   const pressed = info.payload.pressed;
 
   return (

@@ -1,36 +1,10 @@
-import { ButtonSerialMessageScheme } from "@/components/Modules/ButtonM";
-import { led_SerialMessageScheme, SerialCMDLed } from "@/components/Modules/led";
+
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
+import { SerialCMDScheme, SerialCMDType } from "./Command";
+import { SeriaIncomingEventType } from "./Event";
 
-export const LogPayloadScheme    = z.object({ message: z.string() , rawjson:z.string() });
-
-export const messageBase = {
-  id: z.string(),
-  manuel_id: z.string(),
-
-  version: z.string(),
-  kind: z.enum(["registered", "event", "log"]),
-};
-
-export const SerialMessageScheme = z.discriminatedUnion("moduletype", [
-  z.object({ ...messageBase, moduletype: z.literal("log"),    payload: LogPayloadScheme }),
-  led_SerialMessageScheme,
-  ButtonSerialMessageScheme
-]);
-export type SerialMessageType = z.infer<typeof SerialMessageScheme>;
-
-
-export const cmdBase = {
-  kind: z.literal("CMD"),
-  id: z.string(),
-};
-
-export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
-  SerialCMDLed
-]);
-
-export type SerialCMDType = z.infer<typeof SerialCMDScheme>;
+export const LedPayloadScheme    = z.object({ state: z.number() });
 
 export async function sendSerialCommand(command: SerialCMDType) {
   const validCommand = SerialCMDScheme.parse(command);
@@ -47,15 +21,15 @@ export const PortConnectionScheme = z.object({
 });
 export type PortConnectionType = z.infer<typeof PortConnectionScheme>;
 
-type ModuleType = SerialMessageType["moduletype"];
+type ModuleType = SeriaIncomingEventType["moduletype"];
 
 export type OnlyModules<T extends ModuleType> = Extract<
-  SerialMessageType,
+  SeriaIncomingEventType,
   { moduletype: T }
 >;
 
 export type BasicModules = OnlyModules<"led" | "button">;
-export function isBasicModule(message: SerialMessageType): message is BasicModules {
+export function isBasicModule(message: SeriaIncomingEventType): message is BasicModules {
   return message.moduletype === "led" 
   || message.moduletype === "button";
 }

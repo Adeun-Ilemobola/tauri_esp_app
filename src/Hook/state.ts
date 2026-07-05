@@ -3,9 +3,10 @@ import { create } from 'zustand';
 
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useState, useEffect, useCallback } from "react";
-import { BasicModules, isBasicModule, PortConnectionScheme, PortConnectionType, sendSerialCommand, SerialMessageScheme, SerialMessageType } from "./Zod";
+import { BasicModules, isBasicModule, PortConnectionScheme, PortConnectionType, sendSerialCommand} from "./Zod";
 import { forwardConsole } from "../lib/logging";
 import { debug, info, warn, error as logError } from "@tauri-apps/plugin-log";
+import { SeriaIncomingEventScheme, SeriaIncomingEventType } from "./Event";
 
 forwardConsole("log", info);
 forwardConsole("debug", debug);
@@ -48,8 +49,8 @@ interface ListenStore {
 
 
     // 
-    logs: SerialMessageType[];
-    addLog: (log: SerialMessageType) => void;
+    logs: SeriaIncomingEventType[];
+    addLog: (log: SeriaIncomingEventType) => void;
     clear: () => void;
 
 
@@ -216,10 +217,10 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                    }
                 });
 
-                const unlistenBatch = await listen<SerialMessageType[]>("serial_batch", (event) => {
+                const unlistenBatch = await listen<SeriaIncomingEventType[]>("serial_batch", (event) => {
 
                     for (const msg of event.payload) {
-                        const result = SerialMessageScheme.safeParse(msg);
+                        const result = SeriaIncomingEventScheme.safeParse(msg);
                         if (!result.success) {
                             console.error("[ListenStore] serial-Registered parse failed:", result.error);
                             continue;
