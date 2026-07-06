@@ -11,7 +11,7 @@ export default function Devices() {
   const modules = useListenStore((state) => state.modules)
 
   return (
-    <div className=' flex flex-col h-[88dvh] gap-2.5 p-3 overflow-y-auto'>
+    <div className=' flex flex-col h-[88dvh] gap-3 p-3 overflow-y-auto'>
       {modules.map(item => {
         switch (item.moduletype) {
           case "led":

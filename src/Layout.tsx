@@ -21,6 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
 import { useListenStore, usePortStore } from "./Hook/state";
 import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner"
 
 const navMain = [
   { label: "Dashboard", icon: "⊞", path: "" },
@@ -52,6 +53,10 @@ export function Layout() {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <Toaster 
+        richColors
+        position="bottom-center"
+      />
       <TooltipProvider>
         <SidebarProvider>
           <AppSidebar />

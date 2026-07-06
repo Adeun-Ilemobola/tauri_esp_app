@@ -28,7 +28,7 @@ interface PortStore {
     listPorts: string[]
     commitTime: Date | null
     status: ConnectionStatus
-    error: string | null
+    error: string | null,
     setPortInfo: (info: Partial<PortConnectionType>) => void;
     connect: (port: string, baudRate: number) => Promise<boolean>;
     getPorts: () => Promise<void>;
@@ -79,6 +79,9 @@ export const usePortStore = create<PortStore>((set, get) => ({
             set({ error: valid.error.issues[0].message, status: "error" });
             return false;
         }
+         useListenStore.getState().stopListeners();
+         set({commitTime:null})
+        
         set({ status: "connecting", error: null, portInfo: valid.data });
         try {
             await invoke("start_serial_listener", {
@@ -97,13 +100,7 @@ export const usePortStore = create<PortStore>((set, get) => ({
         }
     },
     disconnect: async () => {
-        console.info("[PortStore] disconnecting...");
-        try {
-            await invoke("stop_serial_listener");
-            console.info("[PortStore] disconnected");
-        } finally {
-            set({ status: "disconnected", commitTime: null });
-        }
+         set({commitTime:null , listPorts: [] ,  portInfo: { port: "", baudRate: 115200 } , error: null });
     },
     getPorts: async () => {
         console.debug("[PortStore] listing serial ports...");
@@ -140,11 +137,15 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     },
     clear: () => {
         console.info("[ListenStore] clearing logs and modules");
-        set({ logs: [], modules: [] });
+        set({ logs: [], modules: [] ,  ListenersErr: false ,isListening: false  });
     },
     stopListeners: () => {
-        const { Unlisten } = get();
+        const { Unlisten , clear } = get();
         console.info("[ListenStore] stopping listeners");
+        if (Object.values(Unlisten).length <= 0) {
+            return
+        }
+        clear()
         Object.values(Unlisten).forEach((fn) => fn?.());
         set({ Unlisten: { unlistenBatch: null, error: null } });
     },
@@ -285,73 +286,3 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     },
 }));
 
-// export function useSerial() {
-//     const [ports, setPorts] = useState<string[]>([]);
-//     const [status, setStatus] = useState<ConnectionStatus>("disconnected");
-//     const [error, setError] = useState<string | null>(null);
-
-//     useEffect(() => {
-//         const unlisteners: UnlistenFn[] = [];
-//         let cancelled = false;
-
-//         // helper: registers a listener and routes its unlisten fn to the right place
-//         const track = (p: Promise<UnlistenFn>) =>
-//             p.then((fn) => {
-//                 if (cancelled) fn();            // resolved too late — tear down now
-//                 else unlisteners.push(fn);
-//             });
-
-//         track(listen<SerialMessageType>("serial-Registered", (event) => {
-//             const result = SerialMessageScheme.safeParse(event.payload);
-//             if (!result.success) {
-//                 console.error("Bad serial message:", result.error, event.payload);
-//                 return;
-//             }
-//             console.log("Registered:", result.data);
-//         }));
-
-//         track(listen<SerialMessageType>("serial-Event", (event) => {
-//             const result = SerialMessageScheme.safeParse(event.payload);
-//             if (!result.success) {
-//                 console.error("Bad serial message:", result.error, event.payload);
-//                 return;
-//             }
-//             console.log("Event:", result.data);
-//         }));
-
-//         track(listen<string>("serial-error", (event) => {
-//             console.error("Serial error:", event.payload);
-//         }));
-
-//         track(listen("serial-parse-error", (event) => {
-//             console.error("Parse error:", event.payload);
-//         }));
-
-//         return () => {
-//             cancelled = true;
-//             unlisteners.forEach((fn) => fn());
-//         };
-//     }, []);
-//     const listPorts = useCallback(async () => {
-//         try {
-//             const result = await invoke<string[]>("list_serial_ports");
-//             setPorts(result);
-//         } catch (e) {
-//             console.error("Failed to list ports:", e);
-//         }
-//     }, []);
-
-//     const connect = useCallback(async (portName: string, baudRate: number) => {
-//         setStatus("connecting");
-//         setError(null);
-//         try {
-//             await invoke("start_serial_listener", { portName, baudRate });
-//             setStatus("connected");
-//         } catch (e: any) {
-//             setStatus("error");
-//             setError(String(e));
-//         }
-//     }, []);
-
-//     return { ports, status, error, listPorts, connect };
-// }

@@ -17,6 +17,15 @@ import { usePortStore } from '@/Hook/state';
 import { PortConnectionScheme, PortConnectionType } from '@/Hook/Zod';
 import { useEffect, useState } from 'react'
 
+function formatDuration(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+}
+
 export default function PortSettings() {
   const portInfo = usePortStore((state) => state.portInfo)
   const connect = usePortStore((state) => state.connect)
@@ -25,10 +34,28 @@ export default function PortSettings() {
   const listPorts = usePortStore((state) => state.listPorts)
   const getPorts = usePortStore((state) => state.getPorts)
   const setPortInfo = usePortStore((state) => state.setPortInfo)
+  const startConnectionTime =  usePortStore((state) => state.commitTime)
+
+  const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
     getPorts()
   }, [])
+
+  useEffect(() => {
+    if (!startConnectionTime) {
+      setElapsed(0)
+      return
+    }
+
+    const update = () => {
+      setElapsed(Date.now() - startConnectionTime.getTime())
+    }
+
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [startConnectionTime])
   function MakeConnect() {
     const val = PortConnectionScheme.safeParse(portInfo)
     if (val.success) {
@@ -126,6 +153,15 @@ export default function PortSettings() {
         </div>
 
       </div>
+
+      {startConnectionTime && (
+        <div className=' flex flex-col items-center gap-1 mt-2'>
+          <Label>Connected for</Label>
+          <p className=' text-2xl font-mono tabular-nums'>
+            {formatDuration(elapsed)}
+          </p>
+        </div>
+      )}
 
     </div>
   )

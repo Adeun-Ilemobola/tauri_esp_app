@@ -2,6 +2,7 @@ import { SeriaIncomingEventType } from "@/Hook/Event";
 import { useListenStore } from "@/Hook/state";
 
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { Separator } from "@/components/ui/separator";
 
 
 import React, { useState, useRef } from 'react'
@@ -21,7 +22,7 @@ function LogFramePage({ logs }: { logs: SeriaIncomingEventType[] }) {
     const Virtualizer = useVirtualizer({
         count: logs.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => 100,
+        estimateSize: () => 110,
     })
     const virtualizerLog = Virtualizer.getVirtualItems();
     return (
@@ -32,33 +33,38 @@ function LogFramePage({ logs }: { logs: SeriaIncomingEventType[] }) {
             {/* logs */}
             <div
                 ref={parentRef}
-                className="flex flex-col h-[88dvh] w-full overflow-y-auto   gap-1.5 p-1 bg-neutral-500/50 rounded"
+                className="flex flex-col h-[85dvh] w-full overflow-auto"
             >
                 <div
-                    className=" relative"
                     style={{
-                        height: `${Virtualizer.getTotalSize()}px`
+                        height: `${Virtualizer.getTotalSize()}px`,
+                        width: '100%',
+                        position: 'relative',
                     }}
                 >
-                    {virtualizerLog.map((Vlog) => {
-                        const getRawLog = logs[Vlog.index]
+                    {virtualizerLog.map((virtualItem) => {
+                        const getRawLog = logs[virtualItem.index]
 
 
                         return (
                             <div
-                                key={Vlog.key}
+                                key={virtualItem.key}
+                                 ref={Virtualizer.measureElement}
+                                data-index={virtualItem.index}
                                 style={{
                                     position: 'absolute',
                                     top: 0,
                                     left: 0,
                                     width: '100%',
-                                    height: `${Vlog.size}px`,
-                                    transform: `translateY(${Vlog.start}px)`,
+                                    height: `${virtualItem.size}px`,
+                                    transform: `translateY(${virtualItem.start}px)`,
                                 }}
+                               
                             >
                                 <LogCard
                                     log={getRawLog}
                                 />
+                                <Separator/>
 
                             </div>
 
@@ -78,10 +84,10 @@ function LogCard({ log }: { log: SeriaIncomingEventType }) {
 
     return (
         <div
-            className="flex flex-col gap-0.5 overflow-y-auto rounded px-2 py-1 bg-background/70 text-sm font-mono"
+            className="flex flex-col gap-1.5 overflow-y-auto rounded px-2 py-1  "
         >
-            <div className="flex flex-row items-center gap-2">
-                <span className={`shrink-0 text-sm font-semibold uppercase px-1.5 py-0.5 rounded ${log.kind === "event"
+            <div className="flex flex-row items-center gap-2  ">
+                <span className={`shrink-0 text-[1rem] font-semibold uppercase px-1.5 py-0.5 rounded ${log.kind === "event"
                     ? "bg-blue-500/20 text-blue-400"
                     : log.kind === "registered"
                         ? "bg-green-500/20 text-green-400"

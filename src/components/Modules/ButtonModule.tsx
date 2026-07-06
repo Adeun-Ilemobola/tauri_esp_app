@@ -1,17 +1,18 @@
 import { OnlyModules } from "@/Hook/Zod";
 import { Badge } from "../ui/badge";
+import ModuleCore from "./ModuleCore";
 
 
 
-export  function ButtonModule({ info }: { info: OnlyModules<"button"> }) {
+export function ButtonModule({ info }: { info: OnlyModules<"button"> }) {
   const pressed = info.payload.pressed;
 
   return (
-    <div className=' relative flex flex-col gap-1.5 pt-5 p-2 rounded bg-gray-700/75'>
-      <Badge className=' absolute -top-2 right-3' variant={"secondary"}>
-        {info.moduletype}
-      </Badge>
-      <p className=' text-sm  text-amber-600/40'>{info.id}</p>
+    <ModuleCore
+      id={info.id}
+      manuel_id={info.manuel_id}
+      moduletype={info.moduletype}
+    >
 
       <div className=' flex flex-row items-center gap-2.5'>
         <span
@@ -24,6 +25,6 @@ export  function ButtonModule({ info }: { info: OnlyModules<"button"> }) {
           {pressed ? 'Pressed' : 'Released'}
         </h1>
       </div>
-    </div>
+    </ModuleCore>
   )
 }
