@@ -18,6 +18,9 @@ pub struct CommandEnvelope {
 #[serde(tag = "moduletype", content = "payload", rename_all = "snake_case")]
 pub enum CommandBody {
     Led(LedCommand),
+    ClusterLeds(ClusterCommand),
+    // Spelled to match the firmware's `ModuleCommand::Sorvo` wire tag.
+    Sorvo(SorvoCommand),
 }
 
 
@@ -26,4 +29,21 @@ pub enum CommandBody {
 pub enum LedCommand {
     SetState { state: u32 },
     Toggle,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "command", rename_all = "snake_case")]
+pub enum SorvoCommand {
+    SetAngle { angle: u32 },
+    SetMinPivot { min_pivot: u32 },
+    SetMaxPivot { max_pivot: u32 },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "command", rename_all = "snake_case")]
+pub enum ClusterCommand {
+    ToggleAll,
+    SetAll { state: u32 },
+    Toggle { id: String, state: u32 },
+    SetState { id: String, state: u32 },
 }

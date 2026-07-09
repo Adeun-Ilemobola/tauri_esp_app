@@ -4,8 +4,6 @@ import { z } from "zod";
 import { SerialCMDScheme, SerialCMDType } from "./Command";
 import { SeriaIncomingEventType } from "./Event";
 
-export const LedPayloadScheme    = z.object({ state: z.number() });
-
 export async function sendSerialCommand(command: SerialCMDType) {
   const validCommand = SerialCMDScheme.parse(command);
 
@@ -28,8 +26,9 @@ export type OnlyModules<T extends ModuleType> = Extract<
   { moduletype: T }
 >;
 
-export type BasicModules = OnlyModules<"led" | "button">;
+export type BasicModules = OnlyModules<"led" | "button" | "sorvo">;
 export function isBasicModule(message: SeriaIncomingEventType): message is BasicModules {
-  return message.moduletype === "led" 
-  || message.moduletype === "button";
+  return message.moduletype === "led"
+  || message.moduletype === "button"
+  || message.moduletype === "sorvo";
 }
