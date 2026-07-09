@@ -8,14 +8,11 @@ export const cmdBase = {
   id: z.string(),
 };
 
-// Firmware payloads are `u32`, so anything negative is rejected here rather
-// than failing to deserialize on the Rust side.
-const u32 = z.number().int().nonnegative();
 
 export const LedCommandTypeScheme = z.discriminatedUnion("command", [
   z.object({
     command: z.literal("set_state"),
-    state: u32,
+    state: z.number(),
   }),
 
   z.object({
@@ -23,20 +20,20 @@ export const LedCommandTypeScheme = z.discriminatedUnion("command", [
   }),
 ]);
 
-export const SorvoCommandTypeScheme = z.discriminatedUnion("command", [
+export const ServoCommandTypeScheme = z.discriminatedUnion("command", [
   z.object({
     command: z.literal("set_angle"),
-    angle: u32,
+    angle: z.number(),
   }),
 
   z.object({
     command: z.literal("set_min_pivot"),
-    min_pivot: u32,
+    min_pivot: z.number(),
   }),
 
   z.object({
     command: z.literal("set_max_pivot"),
-    max_pivot: u32,
+    max_pivot: z.number(),
   }),
 ]);
 
@@ -47,19 +44,19 @@ export const ClusterCommandTypeScheme = z.discriminatedUnion("command", [
 
   z.object({
     command: z.literal("set_all"),
-    state: u32,
+    state: z.number(),
   }),
 
   z.object({
     command: z.literal("toggle"),
     id: z.string(),
-    state: u32,
+    state: z.number(),
   }),
 
   z.object({
     command: z.literal("set_state"),
     id: z.string(),
-    state: u32,
+    state: z.number(),
   }),
 ]);
 
@@ -69,10 +66,10 @@ export const   SerialCMDLed =z.object({
     payload: LedCommandTypeScheme,
   })
 
-export const SerialCMDSorvo = z.object({
+export const SerialCMDServo = z.object({
   ...cmdBase,
-  moduletype: z.literal("sorvo"),
-  payload: SorvoCommandTypeScheme,
+  moduletype: z.literal("servo"),
+  payload: ServoCommandTypeScheme,
 })
 
 export const SerialCMDClusterLeds = z.object({
@@ -83,7 +80,7 @@ export const SerialCMDClusterLeds = z.object({
 
 export const SerialCMDScheme = z.discriminatedUnion("moduletype", [
   SerialCMDLed,
-  SerialCMDSorvo,
+  SerialCMDServo,
   SerialCMDClusterLeds,
 ]);
 

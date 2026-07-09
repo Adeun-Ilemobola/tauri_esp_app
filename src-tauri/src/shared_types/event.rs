@@ -8,24 +8,26 @@ use std::sync::{
 use std::thread::JoinHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum MessageKind {
     Registered,
     Event,
     Log,
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InComingEvent {
     pub id: String,
-    manuel_id:String,
+    pub manuel_id: String,
     pub version: String,
     pub kind: MessageKind,
     pub moduletype: String,
-    #[serde(flatten)]
     pub payload: Value,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub generated_info: Option<Value>,
+
+    pub master_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
