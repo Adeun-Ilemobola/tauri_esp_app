@@ -152,11 +152,6 @@ fn start_serial_listener(
                 }
 
                 Err(err) => {
-                    log::error!(
-                        "[serial-reader] Read error on '{}': {}",
-                        port_name_thread,
-                        err
-                    );
                     let _ = app.emit("serial_error", err.to_string());
                     break;
                 }
@@ -166,12 +161,12 @@ fn start_serial_listener(
                     let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
 
-                    log::debug!(
-                        "[serial-reader] Line #{} received ({} bytes raw): {:?}",
-                        line_count,
-                        bytes_read,
-                        trimmed
-                    );
+                    // log::debug!(
+                    //     "[serial-reader] Line #{} received ({} bytes raw): {:?}",
+                    //     line_count,
+                    //     bytes_read,
+                    //     trimmed
+                    // );
 
                     if trimmed.is_empty() {
                         log::debug!("[serial-reader] Line #{} is empty, skipping", line_count);
@@ -181,10 +176,10 @@ fn start_serial_listener(
 
                     match serde_json::from_str::<InComingEvent>(trimmed) {
                         Ok(event) => {
-                            log::info!(
-                                "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
-                                line_count, event.id, event.version, event.kind
-                            );
+                            // log::info!(
+                            //     "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
+                            //     line_count, event.id, event.version, event.kind
+                            // );
                             
 
                             if batch.is_empty() {
@@ -222,10 +217,6 @@ fn start_serial_listener(
                         }
 
                         Err(err) => {
-                            log::warn!(
-                                "[serial-reader] Line #{} failed to parse as SerialMessage: {}\n  raw: {:?}",
-                                line_count, err, trimmed
-                            );
                             let parse_error = SerialParseError {
                                 raw: line.to_string(),
                                 error: err.to_string(),
@@ -279,41 +270,45 @@ fn start_serial_listener(
 
 #[tauri::command]
 fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Result<(), String> {
+    let started = std::time::Instant::now();
     log::info!(
         "[send_serial_command] Sending command — kind='{}' id='{}' payload={:?}",
         data.kind,
         data.id,
         data.command
     );
-    log::info!(
-        "[send_serial_command] Sending — kind='{:?}' id='{}' payload={:?}",
-        data.kind,
-        data.id,
-        data.command
-    );
 
-    let mut guard = state.runtime.lock().unwrap();
-    let runtime = guard.as_mut().ok_or_else(|| {
-        log::error!("[send_serial_command] No serial port connected");
-        "Serial port is not connected".to_string()
-    })?;
-    let mut message = serde_json::to_string(&data).map_err(|err| {
+     let mut message = serde_json::to_string(&data).map_err(|err| {
         log::error!("[send_serial_command] Serialization failed: {err}");
         err.to_string()
     })?;
     message.push('\n');
+
+
+    let mut guard = state.runtime.lock().unwrap();
+
+    let runtime = guard.as_mut().ok_or_else(|| {
+        log::error!("[send_serial_command] No serial port connected");
+        "Serial port is not connected".to_string()
+    })?;
+
+
     log::debug!("[send_serial_command] Serialized payload: {:?}", message);
 
     runtime.port.write_all(message.as_bytes()).map_err(|err| {
         log::error!("[send_serial_command] Write failed: {err}");
         err.to_string()
     })?;
+    log::debug!("write_all took {:?}", started.elapsed());
+    let flush_started = std::time::Instant::now();
+
+
     runtime.port.flush().map_err(|err| {
         log::error!("[send_serial_command] Flush failed: {err}");
         err.to_string()
     })?;
 
-    log::info!("[send_serial_command] Command sent and flushed");
+    log::debug!("flush took {:?}", flush_started.elapsed());
     Ok(())
 }
 

@@ -1,15 +1,20 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
-import { SerialCMDScheme, SerialCMDType } from "./Command";
+import { SerialCMDType } from "./Command";
 import { SeriaIncomingEventType } from "./Event";
 
 export async function sendSerialCommand(command: SerialCMDType) {
-  const validCommand = SerialCMDScheme.parse(command);
-  console.info("sendSerialCommand :" + validCommand)
-
+   const startedAt = performance.now();
+  console.info("Command created", {
+    command,
+    elapsed: performance.now() - startedAt,
+  });
   await invoke("send_serial_command", {
-    data: validCommand,
+    data: command,
+  });
+   console.info("Tauri invoke completed", {
+    elapsed: performance.now() - startedAt,
   });
 }
 
