@@ -4,7 +4,7 @@
 
 import {ButtonModule} from '@/components/Modules/ButtonModule'
 import { LedCard } from '@/components/Modules/led'
-import { ServoCard } from '@/components/Modules/Servo'
+// import { ServoCard } from '@/components/Modules/Servo'
 import { useListenStore } from '@/Hook/state'
 
 
@@ -22,7 +22,8 @@ export default function Devices() {
             return <ButtonModule key={item.id} info={item} />
 
           case "servo":
-            return <ServoCard key={item.id} info={item} />
+            // return <ServoCard key={item.id} info={item} />
+            return null
 
           default:
             return null;

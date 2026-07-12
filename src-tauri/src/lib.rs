@@ -106,7 +106,6 @@ fn start_serial_listener(
         e.to_string()
     })?;
 
-    log::debug!("[start_serial_listener] Port cloned for reader thread");
 
     let stop_flag = Arc::new(AtomicBool::new(false));
     let stop_flag_thread = Arc::clone(&stop_flag);
