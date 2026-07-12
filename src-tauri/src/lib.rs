@@ -2,7 +2,7 @@ mod shared_types;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use crate::shared_types::command::CommandEnvelope;
 use crate::shared_types::event::{
-    InComingEvent, MAX_TIME_BETEEN, MAXBACTH, MessageKind, SerialParseError, SerialRuntime, SerialState
+    InComingEvent, MAX_TIME_BETEEN, MAXBACTH, SerialParseError, SerialRuntime, SerialState
 };
 
 use std::sync::{
@@ -185,9 +185,7 @@ fn start_serial_listener(
                                 "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
                                 line_count, event.id, event.version, event.kind
                             );
-                            // log::debug!("[serial-reader] Full message: {:#?}", event);
-                            // log_payload(&event.payload);
-                            let now = Instant::now();
+                            
 
                             if batch.is_empty() {
                                 first_stamp = Some(Instant::now());

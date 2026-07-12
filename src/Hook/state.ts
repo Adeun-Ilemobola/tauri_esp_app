@@ -56,6 +56,8 @@ interface ListenStore {
 
     // 
     modules: BasicModules[]
+    modulesRaw : Record<string ,BasicModules>
+    moduleIdRef:Record<string ,string>
 
 
 }
@@ -128,6 +130,8 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     isListening: false,
     logs: [],
     modules: [],
+    moduleIdRef:{},
+    modulesRaw:{},
 
     addLog: (log) => {
         console.debug(`[ListenStore] addLog — kind: ${log.kind}, id: ${log.id}`);
@@ -162,56 +166,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
 
         (async () => {
             try {
-                // const registered = await listen<SerialMessageType>("serial_registered", (event) => {
-                //     const result = SerialMessageScheme.safeParse(event.payload);
-                //     if (!result.success) {
-                //         console.error("[ListenStore] serial-Registered parse failed:", result.error);
-                //         return;
-                //     }
-                //     const fullresult = result.data;
-
-                //     if (fullresult.kind === "registered" && isBasicModule(fullresult)) {
-                //         set((state) => {
-                //             const modulesExist = state.modules.some((module) => module.id === fullresult.id);
-                //             if (modulesExist) {
-                //                 console.debug(`[ListenStore] module ${fullresult.id} already registered, skipping`);
-                //                 return state;
-                //             }
-                //             console.info(`[ListenStore] new module registered — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
-                //             return { modules: [...state.modules, fullresult] };
-                //         });
-                //     }
-                //     addLog(result.data);
-                // });
-
-                // const Event = await listen<SerialMessageType>("serial_Event", (event) => {
-                //     const result = SerialMessageScheme.safeParse(event.payload);
-                //     if (!result.success) {
-                //         console.error("[ListenStore] serial-Event parse failed:", result.error);
-                //         return;
-                //     }
-                //     console.debug(`[ListenStore] received serial-Event — kind: ${result.data.kind}, id: ${result.data.id}`);
-                //     addLog(result.data);
-                //     const fullresult = result.data;
-                //     if (fullresult.kind === "event" && isBasicModule(fullresult)) {
-                //         console.info(`[ListenStore] module state update — id: ${result.data.id}, type: ${result.data.moduletype}`);
-                //         set((state) => {
-                //             const id = fullresult.id
-                //             const m = state.modules.map(item => {
-                //                 if (item.id === id) {
-                //                     return {
-                //                         ...fullresult
-                //                     }
-                //                 }
-                //                 return item
-
-                //             })
-
-                //             return { modules: m }
-                //         });
-                //     }
-                // });
-
+               
                 const error = await listen<string>("serial_error", (event) => {
                    if (event.payload.trim().length > 0 ){
                      console.error("[ListenStore] serial-error from device:", event.payload);
@@ -226,30 +181,41 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                             console.error("[ListenStore] serial-Registered parse failed:", result.error);
                             continue;
                         }
-                        const fullresult = result.data;
-                        switch (fullresult.kind) {
+                        const newModule = result.data;
+                        switch (newModule.kind) {
                             case "registered":
-                                if (isBasicModule(fullresult)) {
+                                if (isBasicModule(newModule)) {
                                     set((state) => {
-                                        const modulesExist = state.modules.some((module) => module.id === fullresult.id);
+                                        const modulesExist = state.modules.some((module) => module.id === newModule.id);
                                         if (modulesExist) {
-                                            console.debug(`[ListenStore] module ${fullresult.id} already registered, skipping`);
+                                            console.debug(`[ListenStore] module ${newModule.id} already registered, skipping`);
                                             return state;
                                         }
-                                        console.info(`[ListenStore] new module registered — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
-                                        return { modules: [...state.modules, fullresult] };
+                                        console.info(`[ListenStore] new module registered — id: ${newModule.id}, type: ${newModule.moduletype}`);
+                                      
+                                        return { 
+                                            modules: [...state.modules, newModule], 
+                                            moduleIdRef:{
+                                                ...state.moduleIdRef,
+                                                [newModule.manuel_id]:newModule.id
+                                            },
+                                            modulesRaw:{
+                                                ...state.modulesRaw,
+                                                [newModule.id]:newModule
+                                            }
+                                        };
                                     });
                                 }
                                 break;
                             case "event":
-                                if (isBasicModule(fullresult)) {
-                                    console.info(`[ListenStore] module state update — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                                if (isBasicModule(newModule)) {
+                                    console.info(`[ListenStore] module state update — id: ${newModule.id}, type: ${newModule.moduletype}`);
                                     set((state) => {
-                                        const id = fullresult.id
+                                        const id = newModule.id
                                         const m = state.modules.map(item => {
                                             if (item.id === id) {
                                                 return {
-                                                    ...fullresult
+                                                    ...newModule
                                                 }
                                             }
                                             return item
@@ -261,10 +227,10 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                                 }
                                 break;
                             case "log":
-                                console.debug(`[ListenStore] log message — id: ${fullresult.id}, type: ${fullresult.moduletype}`);
+                                console.debug(`[ListenStore] log message — id: ${newModule.id}, type: ${newModule.moduletype}`);
                                 break;
                             default:
-                                console.warn(`[ListenStore] unknown message kind: ${fullresult.kind}`);
+                                console.warn(`[ListenStore] unknown message kind: ${newModule.kind}`);
                         }
                         addLog(result.data);
                     }

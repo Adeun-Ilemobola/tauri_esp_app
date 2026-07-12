@@ -36,10 +36,11 @@ pub struct SerialParseError {
     pub error: String,
 }
 
-pub static mut SERIAL_MODE: bool = false;
+//pub static mut SERIAL_MODE: bool = false;
 
 
 pub struct SerialRuntime {
+    
     pub port_name: Option<String>,
     pub baud_rate: u32,
     pub port: Box<dyn SerialPort>,
