@@ -15,13 +15,13 @@ export default function Devices() {
     <div className=' flex flex-col h-[88dvh] gap-3 p-3 overflow-y-auto'>
       {modules.map(item => {
         switch (item.moduletype) {
-          case "led":
+          case "Led":
             return <LedCard key={item.id} info={item} />
 
-          case "button":
+          case "Button":
             return <ButtonModule key={item.id} info={item} />
 
-          case "servo":
+          case "Servo":
             // return <ServoCard key={item.id} info={item} />
             return null
 

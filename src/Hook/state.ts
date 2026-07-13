@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useState, useEffect, useCallback } from "react";
-import { BasicModules, isBasicModule, PortConnectionScheme, PortConnectionType, sendSerialCommand} from "./Zod";
+import { PortConnectionScheme, PortConnectionType, sendSerialCommand} from "./Zod";
 import { forwardConsole } from "../lib/logging";
 import { debug, info, warn, error as logError } from "@tauri-apps/plugin-log";
 import { SeriaIncomingEventScheme, SeriaIncomingEventType } from "./Event";
@@ -55,8 +55,8 @@ interface ListenStore {
 
 
     // 
-    modules: BasicModules[]
-    modulesRaw : Record<string ,BasicModules>
+    modules: SeriaIncomingEventType[]
+    modulesRaw : Record<string ,SeriaIncomingEventType>
     moduleIdRef:Record<string ,string>
 
 
@@ -183,8 +183,8 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                         }
                         const newModule = result.data;
                         switch (newModule.kind) {
-                            case "registered":
-                                if (isBasicModule(newModule)) {
+                            case "Register":
+                               
                                     set((state) => {
                                         const modulesExist = state.modules.some((module) => module.id === newModule.id);
                                         if (modulesExist) {
@@ -205,10 +205,10 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                                             }
                                         };
                                     });
-                                }
+                                
                                 break;
-                            case "event":
-                                if (isBasicModule(newModule)) {
+                            case "State":
+                               
                                     console.info(`[ListenStore] module state update — id: ${newModule.id}, type: ${newModule.moduletype}`);
                                     set((state) => {
                                         const id = newModule.id
@@ -224,11 +224,11 @@ export const useListenStore = create<ListenStore>((set, get) => ({
 
                                         return { modules: m }
                                     });
-                                }
+                                
                                 break;
-                            case "log":
-                                console.debug(`[ListenStore] log message — id: ${newModule.id}, type: ${newModule.moduletype}`);
-                                break;
+                            // case "log":
+                            //     console.debug(`[ListenStore] log message — id: ${newModule.id}, type: ${newModule.moduletype}`);
+                            //     break;
                             default:
                                 console.warn(`[ListenStore] unknown message kind: ${newModule.kind}`);
                         }

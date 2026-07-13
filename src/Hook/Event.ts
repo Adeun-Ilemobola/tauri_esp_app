@@ -1,4 +1,5 @@
 import z from "zod";
+import { EventModeType, moduleTypeIdentifier } from "./moduleType";
 
 
 
@@ -8,7 +9,7 @@ export const incomingEventBase = {
   id: z.string(),
   manuel_id: z.string(),
   version: z.string(),
-  kind: z.enum(["registered", "event", "log"]),
+  kind: EventModeType,
   master_id: z.string().nullish(),
   generated_info: z.unknown().optional(),
 };
@@ -17,12 +18,12 @@ export const incomingEventBase = {
 export const ButtonPayloadScheme = z.object({ pressed: z.boolean() });
 
 export const ButtonSerialMessageScheme = z.object({
-  ...incomingEventBase, moduletype: z.literal("button"), payload: ButtonPayloadScheme
+  ...incomingEventBase, moduletype: z.literal(moduleTypeIdentifier.enum.Button), payload: ButtonPayloadScheme
 })
 
 export const LedPayloadScheme    = z.object({ state: z.number() });
 
-export const led_SerialMessageScheme = z.object({ ...incomingEventBase, moduletype: z.literal("led"),    payload: LedPayloadScheme })
+export const led_SerialMessageScheme = z.object({ ...incomingEventBase, moduletype: z.literal(moduleTypeIdentifier.enum.Led),    payload: LedPayloadScheme })
 
 
 export const ServoConfigScheme = z.object({
@@ -45,12 +46,12 @@ export const ServoPayloadScheme = z.object({
 })
 
 export const ServoSerialMessageScheme = z.object({
-  ...incomingEventBase, moduletype: z.literal("servo"), payload: ServoPayloadScheme
+  ...incomingEventBase, moduletype: z.literal(moduleTypeIdentifier.enum.Servo), payload: ServoPayloadScheme
 })
 
 
 export const SeriaIncomingEventScheme = z.discriminatedUnion("moduletype", [
-  z.object({ ...incomingEventBase, moduletype: z.literal("log"),    payload: LogPayloadScheme }),
+  // z.object({ ...incomingEventBase, moduletype: z.literal("log"),    payload: LogPayloadScheme }),
   led_SerialMessageScheme,
   ButtonSerialMessageScheme,
   ServoSerialMessageScheme
