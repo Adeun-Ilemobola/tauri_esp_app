@@ -1,8 +1,10 @@
 mod shared_types;
+use tauri_plugin_log::{Target, TargetKind};
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use crate::shared_types::command::CommandEnvelope;
 use crate::shared_types::event::{
-    InComingEvent, MAX_TIME_BETEEN, MAXBACTH, SerialParseError, SerialRuntime, SerialState
+    InComingEvent, SerialParseError, SerialRuntime, SerialState, MAXBACTH, MAX_TIME_BETEEN,
 };
 
 use std::sync::{
@@ -56,7 +58,7 @@ fn flush(batch: &mut Vec<InComingEvent>, app: &AppHandle) {
     if batch.is_empty() {
         return;
     }
-     
+
     if let Err(err) = app.emit("serial_batch", &batch) {
         log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
     }
@@ -105,7 +107,6 @@ fn start_serial_listener(
         log::error!("[start_serial_listener] Failed to clone port for reader: {e}");
         e.to_string()
     })?;
-
 
     let stop_flag = Arc::new(AtomicBool::new(false));
     let stop_flag_thread = Arc::clone(&stop_flag);
@@ -179,7 +180,6 @@ fn start_serial_listener(
                             //     "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
                             //     line_count, event.id, event.version, event.kind
                             // );
-                            
 
                             if batch.is_empty() {
                                 first_stamp = Some(Instant::now());
@@ -277,12 +277,11 @@ fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Resu
         data.command
     );
 
-     let mut message = serde_json::to_string(&data).map_err(|err| {
+    let mut message = serde_json::to_string(&data).map_err(|err| {
         log::error!("[send_serial_command] Serialization failed: {err}");
         err.to_string()
     })?;
     message.push('\n');
-
 
     let mut guard = state.runtime.lock().unwrap();
 
@@ -290,7 +289,6 @@ fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Resu
         log::error!("[send_serial_command] No serial port connected");
         "Serial port is not connected".to_string()
     })?;
-
 
     log::debug!("[send_serial_command] Serialized payload: {:?}", message);
 
@@ -300,7 +298,6 @@ fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Resu
     })?;
     log::debug!("write_all took {:?}", started.elapsed());
     let flush_started = std::time::Instant::now();
-
 
     runtime.port.flush().map_err(|err| {
         log::error!("[send_serial_command] Flush failed: {err}");
@@ -322,12 +319,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(tauri_plugin_log::log::LevelFilter::Info)
-                .build(),
-        )
-        .plugin(
-            tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Debug)
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::Stdout,
+                ))
                 .build(),
         )
         .manage(SerialState {
