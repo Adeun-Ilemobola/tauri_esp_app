@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { OnlyModules, sendSerialCommand } from '@/Hook/Zod';
+import { ServoModule } from '@/lib/ModuleDefinitionSchema';
+import { useModuleStore } from '@/lib/ModuleStore';
 import { useEffect, useState } from 'react';
-import { Badge } from '../ui/badge';
+import z from 'zod';
 import ModuleCore from './ModuleCore';
 
 
@@ -75,66 +76,69 @@ function NumberField({
 }
 
 
-export function ServoCard({ info }: { info: OnlyModules<"servo"> }) {
-  const { angle, offset, min_pivot, max_pivot, config } = info.payload;
+export function ServoCard({ info }: { info: z.infer<typeof ServoModule> }) {
+  const getModule = useModuleStore((state) => state.getModule("Servo", info.lool_up_id));
 
-  const [pivot, setPivot] = useState(min_pivot);
-  const [minPivot, setMinPivot] = useState(min_pivot);
-  const [maxPivot, setMaxPivot] = useState(max_pivot);
+  const [pivot, setPivot] = useState(getModule?.data.state.angle ?? 0);
+  const [minPivot, setMinPivot] = useState(-90);
+  const [maxPivot, setMaxPivot] = useState(90);
+
+  useEffect(() => {
+    if (getModule) {
+      setPivot(getModule.data.state.angle);
+    }
+  }, [getModule?.data.state.angle]);
+
+  if (!getModule) {
+    return null;
+  }
 
   function sendAngle() {
-    // console.info("angle :" + clamp(pivot, min_pivot, max_pivot))
-    sendSerialCommand({
-      id: info.id,
-      kind: "CMD",
-      moduletype: "servo",
-      payload: {
-        command: "set_angle",
-        angle: clamp(pivot, min_pivot, max_pivot),
+    void getModule?.command({
+      id: getModule.data.id,
+      module_type: "Servo",
+      command: {
+        SetAngle: {
+          angle: clamp(pivot, minPivot, maxPivot),
+        },
       }
     })
   }
 
   function sendMinPivot() {
-    sendSerialCommand({
-      id: info.id,
-      kind: "CMD",
-      moduletype: "servo",
-      payload: {
-        command: "set_min_pivot",
-        min_pivot: clamp(minPivot, 0, max_pivot),
+    void getModule?.command({
+      id: getModule.data.id,
+      module_type: "Servo",
+      command: {
+        SetMinPivot: {
+          min_pivot: Math.min(Math.round(minPivot), maxPivot),
+        },
       }
     })
   }
 
   function sendMaxPivot() {
-    sendSerialCommand({
-      id: info.id,
-      kind: "CMD",
-      moduletype: "servo",
-      payload: {
-        command: "set_max_pivot",
-        max_pivot: Math.round(Math.max(maxPivot, min_pivot)),
+    void getModule?.command({
+      id: getModule.data.id,
+      module_type: "Servo",
+      command: {
+        SetMaxPivot: {
+          max_pivot: Math.round(Math.max(maxPivot, minPivot)),
+        },
       }
     })
   }
 
   return (
     <ModuleCore
-      id={info.id}
-      manuel_id={info.manuel_id}
-      moduletype={info.moduletype}
+      id={getModule.data.id}
+      manuel_id={getModule.data.lool_up_id}
+      moduletype={getModule.data.module_type}
     >
       <div className=' flex flex-col items-center gap-2.5'>
         <h1 className=' text-3xl text-center'>
-          {angle}&deg;
+          {getModule.data.state.angle}&deg;
         </h1>
-
-        <div className=' flex flex-row items-center gap-2'>
-          <Badge variant={"outline"}>pivot {min_pivot}&ndash;{max_pivot}</Badge>
-          <Badge variant={"outline"}>offset {offset}</Badge>
-          <Badge variant={"outline"}>limit {config.min_angle}&ndash;{config.max_angle}</Badge>
-        </div>
 
         <NumberField
           label='Pivot'

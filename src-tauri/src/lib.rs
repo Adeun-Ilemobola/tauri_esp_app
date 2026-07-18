@@ -1,11 +1,12 @@
 mod shared_types;
+mod protocol;
 use tauri_plugin_log::{Target, TargetKind};
 
+use crate::shared_types::state::{MAX_TIME_BETEEN, MAXBACTH, SerialParseError, SerialRuntime};
+use crate::{protocol::command::IncomingCommand, shared_types::state::SerialState};
+use crate::protocol::registration::ProtocolMessage;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use crate::shared_types::command::CommandEnvelope;
-use crate::shared_types::event::{
-    InComingEvent, SerialParseError, SerialRuntime, SerialState, MAXBACTH, MAX_TIME_BETEEN,
-};
+
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -54,7 +55,7 @@ fn stop_runtime(state: State<SerialState>) -> Result<(), String> {
     Ok(())
 }
 
-fn flush(batch: &mut Vec<InComingEvent>, app: &AppHandle) {
+fn flush(batch: &mut Vec<ProtocolMessage>, app: &AppHandle) {
     if batch.is_empty() {
         return;
     }
@@ -122,7 +123,7 @@ fn start_serial_listener(
         let mut buf: Vec<u8> = Vec::new();
         let mut line_count: u64 = 0;
 
-        let mut batch: Vec<InComingEvent> = Vec::new();
+        let mut batch: Vec<ProtocolMessage> = Vec::new();
         let mut first_stamp: Option<Instant> = None;
         loop {
             if stop_flag_thread.load(Ordering::Relaxed) {
@@ -174,7 +175,7 @@ fn start_serial_listener(
                         continue;
                     }
 
-                    match serde_json::from_str::<InComingEvent>(trimmed) {
+                    match serde_json::from_str::<ProtocolMessage>(trimmed) {
                         Ok(event) => {
                             // log::info!(
                             //     "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
@@ -268,11 +269,10 @@ fn start_serial_listener(
 // }
 
 #[tauri::command]
-fn send_serial_command(state: State<SerialState>, data: CommandEnvelope) -> Result<(), String> {
+fn send_serial_command(state: State<SerialState>, data: IncomingCommand) -> Result<(), String> {
     let started = std::time::Instant::now();
     log::info!(
-        "[send_serial_command] Sending command — kind='{}' id='{}' payload={:?}",
-        data.kind,
+        "[send_serial_command] Sending command —  id='{}' payload={:?}",
         data.id,
         data.command
     );

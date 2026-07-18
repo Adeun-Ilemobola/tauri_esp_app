@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { usePortStore } from '@/Hook/state';
-import { PortConnectionScheme, PortConnectionType } from '@/Hook/Zod';
+import { PortConnectionScheme, useListenStore } from '@/lib/ListenStore';
+
 import { useEffect, useState } from 'react'
 
 function formatDuration(ms: number) {
@@ -27,19 +27,27 @@ function formatDuration(ms: number) {
 }
 
 export default function PortSettings() {
-  const portInfo = usePortStore((state) => state.portInfo)
-  const connect = usePortStore((state) => state.connect)
-  const status = usePortStore((state) => state.status)
-  const error = usePortStore((state) => state.error)
-  const listPorts = usePortStore((state) => state.listPorts)
-  const getPorts = usePortStore((state) => state.getPorts)
-  const setPortInfo = usePortStore((state) => state.setPortInfo)
-  const startConnectionTime =  usePortStore((state) => state.commitTime)
+  const portInfo = useListenStore((state) => state.portInfo)
+  const connect = useListenStore((state) => state.connect)
+  const status = useListenStore((state) => state.status)
+  const error = useListenStore((state) => state.error)
+  // const listPorts = useListenStore((state) => state.listPorts)
+  const getPorts = useListenStore((state) => state.getPorts)
+  const setPortInfo = useListenStore((state) => state.setPortInfo)
+  const startConnectionTime =  useListenStore((state) => state.commitTime)
 
   const [elapsed, setElapsed] = useState(0)
+  const [ports , setPort] = useState<string[]>([])
 
   useEffect(() => {
-    getPorts()
+    const loadPorts = async ()=>{
+      const data = await getPorts()
+      setPort(data)
+
+    }
+
+    loadPorts()
+    
   }, [])
 
   useEffect(() => {
@@ -97,10 +105,10 @@ export default function PortSettings() {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {listPorts.length === 0 ? (
+                  {ports.length === 0 ? (
                     <SelectItem value="__none__" disabled>No ports available</SelectItem>
                   ) : (
-                    listPorts.map(port => (
+                    ports.map(port => (
                       <SelectItem key={port} value={port}>{port}</SelectItem>
                     ))
                   )}
