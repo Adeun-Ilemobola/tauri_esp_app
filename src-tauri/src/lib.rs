@@ -23,23 +23,12 @@ use tauri::{AppHandle, Emitter};
 
 #[tauri::command]
 fn list_serial_ports() -> Result<Vec<String>, String> {
-    log::info!("[list_serial_ports] Scanning for available serial ports...");
-
     let ports = serialport::available_ports().map_err(|err| {
         log::error!("[list_serial_ports] Failed to list ports: {err}");
         err.to_string()
     })?;
 
     let names: Vec<String> = ports.iter().map(|p| p.port_name.clone()).collect();
-
-    log::info!(
-        "[list_serial_ports] Found {} port(s): {:?}",
-        names.len(),
-        names
-    );
-    for port in &ports {
-        log::debug!("[list_serial_ports] Port detail: {:?}", port);
-    }
 
     Ok(names)
 }
@@ -81,11 +70,11 @@ fn start_serial_listener(
 
     let baud_rate = baud_rate.unwrap_or(115_200);
 
-    log::info!(
-        "[start_serial_listener] Opening port '{}' at {} baud",
-        port_name,
-        baud_rate
-    );
+    // log::info!(
+    //     "[start_serial_listener] Opening port '{}' at {} baud",
+    //     port_name,
+    //     baud_rate
+    // );
 
     let port = serialport::new(&port_name, baud_rate)
         .timeout(Duration::from_millis(100))
@@ -162,12 +151,12 @@ fn start_serial_listener(
                     let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
 
-                    // log::debug!(
-                    //     "[serial-reader] Line #{} received ({} bytes raw): {:?}",
-                    //     line_count,
-                    //     bytes_read,
-                    //     trimmed
-                    // );
+                    log::debug!(
+                        "[serial-reader] Line #{} received ({} bytes raw): {:?}",
+                        line_count,
+                        bytes_read,
+                        trimmed
+                    );
 
                     if trimmed.is_empty() {
                         log::debug!("[serial-reader] Line #{} is empty, skipping", line_count);
@@ -178,16 +167,16 @@ fn start_serial_listener(
                     match serde_json::from_str::<ProtocolMessage>(trimmed) {
                         Ok(event) => {
                             // log::info!(
-                            //     "[serial-reader] Line #{} parsed OK — id='{}' version='{}' kind={:?}",
-                            //     line_count, event.id, event.version, event.kind
+                            //     "[serial-reader] Line #{}  data={:?}",
+                            //     line_count, event
                             // );
 
                             if batch.is_empty() {
                                 first_stamp = Some(Instant::now());
-                                log::debug!(
-                                    "[serial-reader] Starting new batch at line #{}",
-                                    line_count
-                                );
+                                // log::debug!(
+                                //     "[serial-reader] Starting new batch at line #{}",
+                                //     line_count
+                                // );
                             }
 
                             batch.push(event);
@@ -221,6 +210,7 @@ fn start_serial_listener(
                                 raw: line.to_string(),
                                 error: err.to_string(),
                             };
+                            
                             let _ = app.emit("serial_error", parse_error);
                             buf.clear();
                         }

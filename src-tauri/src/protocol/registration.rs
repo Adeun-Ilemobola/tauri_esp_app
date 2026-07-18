@@ -10,7 +10,7 @@ pub enum ModuleType {
     LedCluster,
     Button,
     Lidar,
-    // SysLog
+    SysLog
 }
 #[derive(Debug, Serialize , Deserialize ,Clone )]
 pub struct Registration {

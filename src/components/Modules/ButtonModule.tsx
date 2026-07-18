@@ -1,24 +1,18 @@
 import { ButtonModule as ButtonModuleSchema } from "@/lib/ModuleDefinitionSchema";
-import { useModuleStore } from "@/lib/ModuleStore";
+import { memo } from "react";
 import z from "zod";
 import ModuleCore from "./ModuleCore";
 
 
 
-export function ButtonModule({ info }: { info: z.infer<typeof ButtonModuleSchema> }) {
-  const getModule = useModuleStore((state) => state.getModule("Button", info.lool_up_id));
-
-  if (!getModule) {
-    return null;
-  }
-
-  const pressed = getModule.data.state.on;
+export const ButtonModule = memo(function ButtonModule({ module }: { module: z.infer<typeof ButtonModuleSchema> }) {
+  const pressed = module.state.on;
 
   return (
     <ModuleCore
-      id={getModule.data.id}
-      manuel_id={getModule.data.lool_up_id}
-      moduletype={getModule.data.module_type}
+      id={module.id}
+      manuel_id={module.lool_up_id}
+      moduletype={module.module_type}
     >
 
       <div className=' flex flex-row items-center gap-2.5'>
@@ -34,4 +28,4 @@ export function ButtonModule({ info }: { info: z.infer<typeof ButtonModuleSchema
       </div>
     </ModuleCore>
   )
-}
+});

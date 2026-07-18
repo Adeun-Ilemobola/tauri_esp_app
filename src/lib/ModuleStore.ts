@@ -7,16 +7,6 @@ import {
   Registration,
   TypeIdentifier,
 } from "./ModuleDefinitionSchema";
-type ModuleInfo<T extends TypeIdentifier> = {
-  data: Extract<
-    ModuleDefinitionType,
-    { module_type: T }
-  >;
-
-  command: (
-    command: Extract<Command, { module_type: T }>
-  ) => Promise<void>;
-};
 
 
 type ModuleStore = {
@@ -27,10 +17,7 @@ type ModuleStore = {
   dispatchModuleEvent: (event: ModuleEventEnvelope) => void;
   sendCommand: (command: Command) => Promise<void>;
 
-  getModule: <T extends TypeIdentifier>(
-    type: T,
-    id: string,
-  ) => ModuleInfo<T>| undefined ;
+  ModuleCount : ()=>number,
 };
 
 
@@ -39,8 +26,17 @@ export const useModuleStore = create<ModuleStore>((set, get) => ({
   LookUp_ID_refTo_ID:{},
 
   registerModule: (registration) => {
-    const module = createModule(registration);
 
+    const module_has = get().modules[registration.id]
+    if (module_has){
+      return
+    }
+
+
+    const module = createModule(registration);
+    if (!module) {
+      return;
+    }
     set((store) => ({
       modules: {
         ...store.modules,
@@ -55,71 +51,29 @@ export const useModuleStore = create<ModuleStore>((set, get) => ({
 
   dispatchModuleEvent: (event) => {
     set((store) => {
-      const module = store.modules[event.id];
+      if (event.module_type === "SysLog") {
+        return store;
+      }
+
+      const id = event.event.id;
+      const module = store.modules[id];
 
       if (!module) {
-        return {};
+        return store;
       }
 
-      switch (event.module_type) {
-        case "Led": {
-          if (!isModuleType(module, "Led")) {
-            return {};
-          }
+      const nextModule = applyModuleEvent(module, event);
 
-          return {
-            modules: {
-              ...store.modules,
-              [event.id]: {
-                ...module,
-                state: {
-                  brightness: event.event.event === "Brightness"
-                    ? event.event.level
-                    : event.event.on ? 100 : 0,
-                },
-              },
-            },
-          };
-        }
-
-        case "Button": {
-          if (!isModuleType(module, "Button")) {
-            return {};
-          }
-
-          const on = event.event.event === "Pressed"
-            ? true
-            : event.event.event === "Released"
-              ? false
-              : event.event.on;
-
-          return {
-            modules: {
-              ...store.modules,
-              [event.id]: {
-                ...module,
-                state: { on },
-              },
-            },
-          };
-        }
-
-        case "Servo": {
-          if (!isModuleType(module, "Servo")) {
-            return {};
-          }
-
-          return {
-            modules: {
-              ...store.modules,
-              [event.id]: {
-                ...module,
-                state: { angle: event.event.angle },
-              },
-            },
-          };
-        }
+      if (modulesEqual(module, nextModule)) {
+        return store;
       }
+
+      return {
+        modules: {
+          ...store.modules,
+          [id]: nextModule,
+        },
+      };
     });
   },
 
@@ -127,30 +81,96 @@ export const useModuleStore = create<ModuleStore>((set, get) => ({
     await invoke("send_serial_command", { data: command });
   },
 
-  getModule: (type, id) => {
-
-    const get_root_id  = get().LookUp_ID_refTo_ID[id];
-    if (!get_root_id){
-       return undefined;
-    }
-    const module = get().modules[get_root_id];
-
-    if (!module || !isModuleType(module ,type)) {
-      return undefined;
-    }
-
-    return {
-      data: module,
-      command: async (command) => {
-        await get().sendCommand(command);
-      },
-    } ;
+  ModuleCount:() =>{
+    return Object.values(get().modules).length
   },
 }));
 
+function applyModuleEvent(
+  module: ModuleDefinitionType,
+  event: Exclude<ModuleEventEnvelope, { module_type: "SysLog" }>,
+): ModuleDefinitionType {
+  switch (event.module_type) {
+    case "Led":
+      if (!isModuleType(module, "Led")) return module;
+      return {
+        ...module,
+        state: { brightness: event.event.level },
+      };
+
+    case "Button":
+      if (!isModuleType(module, "Button")) return module;
+      return {
+        ...module,
+        state: { on: !module.state.on },
+      };
+
+    case "Servo":
+      if (!isModuleType(module, "Servo")) return module;
+      if (event.event.event_type !== "GetAngle") return module;
+      return {
+        ...module,
+        state: { angle: event.event.angle },
+      };
+
+    case "Lidar":
+      if (!isModuleType(module, "Lidar")) return module;
+
+      if (event.event.event_type === "ScanState") {
+        return {
+          ...module,
+          state: { ...module.state, state: event.event.state },
+        };
+      }
+
+      if (event.event.event_type === "PointMap") {
+        return {
+          ...module,
+          state: {
+            ...module.state,
+            map: event.event.map.map(({ x, y, distant }) => ({ x, y, distant })),
+          },
+        };
+      }
+
+      return module;
+  }
+}
+
+function modulesEqual(
+  previous: ModuleDefinitionType,
+  next: ModuleDefinitionType,
+): boolean {
+  return deepEqual(previous, next);
+}
+
+function deepEqual(previous: unknown, next: unknown): boolean {
+  if (Object.is(previous, next)) return true;
+  if (typeof previous !== "object" || previous === null) return false;
+  if (typeof next !== "object" || next === null) return false;
+
+  if (Array.isArray(previous) || Array.isArray(next)) {
+    if (!Array.isArray(previous) || !Array.isArray(next)) return false;
+    if (previous.length !== next.length) return false;
+    return previous.every((value, index) => deepEqual(value, next[index]));
+  }
+
+  const previousRecord = previous as Record<string, unknown>;
+  const nextRecord = next as Record<string, unknown>;
+  const previousKeys = Object.keys(previousRecord);
+  const nextKeys = Object.keys(nextRecord);
+
+  if (previousKeys.length !== nextKeys.length) return false;
+
+  return previousKeys.every(
+    (key) => Object.prototype.hasOwnProperty.call(nextRecord, key)
+      && deepEqual(previousRecord[key], nextRecord[key]),
+  );
+}
+
 function createModule(
   registration: Registration,
-): ModuleDefinitionType {
+): ModuleDefinitionType | undefined {
   switch (registration.module_type) {
     case "Led":
       return {
@@ -185,10 +205,21 @@ function createModule(
         },
       };
 
+    case "Lidar" :
+      return {
+        id: registration.id,
+          parent_id:registration.parent_id,
+        module_type: "Lidar",
+        lool_up_id: registration.lool_up_id,
+        state: {
+          state :"Idol",
+          map:[]
+        },
+      };
+
+
     default:
-      throw new Error(
-        `Unsupported module type: ${registration.module_type}`,
-      );
+      return undefined;
   }
 }
 

@@ -27,9 +27,17 @@ export const InComingMessageSchema = z.discriminatedUnion("type", [
 ])
 
 export const InComingMessageBatchSchema = z.array(InComingMessageSchema)
-const UnknownMessageBatchSchema = z.array(z.unknown())
 
 export type InComingMessage = z.infer<typeof InComingMessageSchema>
+
+export type ActivityLogEntry = {
+    id: number
+    receivedAt: number
+    message: InComingMessage
+}
+
+const MAX_ACTIVITY_LOGS = 500
+let nextActivityLogId = 0
 
 
 interface ListenStore {
@@ -42,6 +50,8 @@ interface ListenStore {
     disconnect: () => Promise<void>;
     getPorts: () => Promise<string[]>;
     setPortInfo: (info: Partial<PortConnectionType>) => void;
+    activityLogs: ActivityLogEntry[];
+    clearActivityLogs: () => void;
 
 
 
@@ -77,6 +87,8 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     },
     ListenersErr: false,
     isListening: false,
+    activityLogs: [],
+    clearActivityLogs: () => set({ activityLogs: [] }),
 
     async disconnect() {
         await get().stopListeners();
@@ -109,7 +121,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
         const portInfo = { port, baudRate: baudRate ?? get().portInfo.baudRate };
         const valid = PortConnectionScheme.safeParse(portInfo);
         if (!valid.success) {
-            console.warn("[PortStore] connect validation failed:", valid.error.issues[0].message);
+            // console.warn("[PortStore] connect validation failed:", valid.error.issues[0].message);
             set({ error: valid.error.issues[0].message, status: "error" });
             return false;
         }
@@ -122,7 +134,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
                 portName: valid.data.port,
                 baudRate: valid.data.baudRate,
             });
-            console.info(`[PortStore] connected to ${valid.data.port} at ${valid.data.baudRate} baud`);
+            // console.info(`[PortStore] connected to ${valid.data.port} at ${valid.data.baudRate} baud`);
             set({ status: "connected", commitTime: new Date() });
             await useListenStore.getState().startListeners();
 
@@ -140,7 +152,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
     async getPorts() {
          try {
             const result = await invoke<string[]>("list_serial_ports");
-            console.info("[PortStore] available ports:", result);
+            // console.info("[PortStore] available ports:", result);
             set({  error: null });
             return result
         } catch (e) {
@@ -156,11 +168,11 @@ export const useListenStore = create<ListenStore>((set, get) => ({
         }
 
         try {
-            const error = await listen<unknown>("serial_error", (event) => {
-                console.error("[ListenStore] serial error:", event.payload);
-            });
+            // const error = await listen<unknown>("serial_error", (event) => {
+            //     console.error("[ListenStore] serial error:", event.payload);
+            // });
 
-            const unlistenBatch = await listen<InComingMessage>("serial_batch", (event) => {
+            const unlistenBatch = await listen<unknown>("serial_batch", (event) => {
                 const batch = InComingMessageBatchSchema.safeParse(event.payload);
 
                 if (!batch.success) {
@@ -186,6 +198,13 @@ export const useListenStore = create<ListenStore>((set, get) => ({
 
                     const message = parsedMessage.data;
 
+                    set((state) => ({
+                        activityLogs: [
+                            ...state.activityLogs,
+                            { id: nextActivityLogId++, receivedAt: Date.now(), message },
+                        ].slice(-MAX_ACTIVITY_LOGS),
+                    }));
+
                     switch (message.type) {
                         case "Registration":
                             moduleStore.registerModule(message.payload);
@@ -198,7 +217,7 @@ export const useListenStore = create<ListenStore>((set, get) => ({
             });
 
             set({
-                Unlisten: { unlistenBatch, error },
+                Unlisten: { unlistenBatch, error:null },
                 ListenersErr: false,
                 isListening: true,
             });
@@ -220,10 +239,10 @@ export const useListenStore = create<ListenStore>((set, get) => ({
         });
     },
     setPortInfo(info) {
-         set((pre)=>({
-            portInfo:{
+         set((pre) => ({
+            portInfo: {
                 ...pre.portInfo,
-                info
+                ...info,
             }
          }));
     },

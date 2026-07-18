@@ -1,29 +1,24 @@
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useState } from 'react';
-import { Card, CardContent, CardHeader } from '../ui/card';
-import { Copy } from 'lucide-react';
-import { Separator } from '../ui/separator';
+import { memo, useState } from 'react';
 import ModuleCore from './ModuleCore';
 import z from 'zod';
+import { Command } from '@/lib/ModuleCommand';
 import { LedModule } from '@/lib/ModuleDefinitionSchema';
-import { useModuleStore } from '@/lib/ModuleStore';
 
 
-export function LedCard({ info }: { info: z.infer<typeof LedModule> }) {
-  const getModule = useModuleStore((state) => state.getModule("Led", info.lool_up_id))
+type LedCardProps = {
+  module: z.infer<typeof LedModule>;
+  sendCommand: (command: Command) => Promise<void>;
+};
 
-  if (!getModule) {
-    return null
-  }
-
-  const [data, setData] = useState(getModule.data.state.brightness);
+export const LedCard = memo(function LedCard({ module, sendCommand }: LedCardProps) {
+  const [data, setData] = useState(module.state.brightness);
 
   function SendCmdByText() {
     const clanp = Math.min(Math.max(data, 0), 100)
-    getModule?.command({
-      id: getModule.data.id,
+    void sendCommand({
+      id: module.id,
       module_type: "Led",
       command: {
         SetState: {
@@ -37,9 +32,9 @@ export function LedCard({ info }: { info: z.infer<typeof LedModule> }) {
 
   return (
     <ModuleCore
-      id={info.id}
-      manuel_id={info.lool_up_id}
-      moduletype={info.module_type}
+      id={module.id}
+      manuel_id={module.lool_up_id}
+      moduletype={module.module_type}
     >
       <div className=' flex flex-col items-center gap-2.5'>
         <h1 className=' text-3xl text-center  w-10'>
@@ -64,8 +59,8 @@ export function LedCard({ info }: { info: z.infer<typeof LedModule> }) {
         <Button
           onClick={() => {
 
-            getModule?.command({
-              id: getModule.data.id,
+            void sendCommand({
+              id: module.id,
               module_type: "Led",
               command: {
                 SetState: {
@@ -94,4 +89,4 @@ export function LedCard({ info }: { info: z.infer<typeof LedModule> }) {
 
 
 
-}
+});

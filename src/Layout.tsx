@@ -19,25 +19,27 @@ import {
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/theme-provider"
-import { useListenStore, usePortStore } from "./Hook/state";
+import { useListenStore } from "./lib/ListenStore";
+import { useModuleStore } from "./lib/ModuleStore";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner"
 
 const navMain = [
-  { label: "Dashboard", icon: "⊞", path: "" },
-  { label: "Devices", icon: "⚡", badge: "3", path: "Devices" },
+  { label: "Home", icon: "⊞", path: "/" },
+  { label: "Dashboard", icon: "⊞", path: "/Dashboard" },
+  { label: "Devices", icon: "⚡", badge: "3", path: "/Devices" },
   // { label: "Flash Firmware", icon: "↑" },
 ]
 
 const navSettings = [
-  { label: "Port Settings", icon: "⚙", path: "PortSettings" },
-  { label: "Logs", icon: "☰", path: "Logs" },
+  { label: "Port Settings", icon: "⚙", path: "/PortSettings" },
+  { label: "Logs", icon: "☰", path: "/Logs" },
 ]
 
 export function Layout() {
   const  startListeners = useListenStore((state) => state.startListeners)
   const  stopListeners = useListenStore((state) => state.stopListeners)
-  const  portInfo = usePortStore((state) => state.portInfo)
+  const portInfo = useListenStore((state) => state.portInfo)
 
   useEffect(() => {
     if (!portInfo.port) {
@@ -77,7 +79,7 @@ export function Layout() {
 
 function AppSidebar() {
   const navigate = useNavigate();
-  const modules= useListenStore((state)=> state.modules)
+  const moduleCount = useModuleStore((state) => state.ModuleCount())
 
   return (
     <Sidebar>
@@ -94,16 +96,14 @@ function AppSidebar() {
                 <SidebarMenuItem
                   key={item.label}
                   onClick={() => {
-                    const path = item.path.trim()
-                    navigate(path === "Dashboard" ? "" : path)
-
+                    navigate(item.path)
                   }}
                 >
                   <SidebarMenuButton>
                     <span>{item.icon}</span>
                     <span>{item.label}</span>
                   </SidebarMenuButton>
-                  {item.badge && <SidebarMenuBadge>{modules.length}</SidebarMenuBadge>}
+                  {item.badge && <SidebarMenuBadge>{moduleCount}</SidebarMenuBadge>}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -118,9 +118,7 @@ function AppSidebar() {
                 <SidebarMenuItem
                   key={item.label}
                   onClick={() => {
-                    const path = item.path.trim()
-                    navigate(path)
-
+                    navigate(item.path)
                   }}
                 >
                   <SidebarMenuButton>

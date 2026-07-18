@@ -1,8 +1,8 @@
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
+import { Command } from '@/lib/ModuleCommand';
 import { ServoModule } from '@/lib/ModuleDefinitionSchema';
-import { useModuleStore } from '@/lib/ModuleStore';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import z from 'zod';
 import ModuleCore from './ModuleCore';
 
@@ -76,38 +76,35 @@ function NumberField({
 }
 
 
-export function ServoCard({ info }: { info: z.infer<typeof ServoModule> }) {
-  const getModule = useModuleStore((state) => state.getModule("Servo", info.lool_up_id));
+type ServoCardProps = {
+  module: z.infer<typeof ServoModule>;
+  sendCommand: (command: Command) => Promise<void>;
+};
 
-  const [pivot, setPivot] = useState(getModule?.data.state.angle ?? 0);
+export const ServoCard = memo(function ServoCard({ module, sendCommand }: ServoCardProps) {
+  const [pivot, setPivot] = useState(module.state.angle);
   const [minPivot, setMinPivot] = useState(-90);
   const [maxPivot, setMaxPivot] = useState(90);
 
   useEffect(() => {
-    if (getModule) {
-      setPivot(getModule.data.state.angle);
-    }
-  }, [getModule?.data.state.angle]);
+    setPivot(module.state.angle);
+  }, [module.state.angle]);
 
-  if (!getModule) {
-    return null;
-  }
-
-  function sendAngle() {
-    void getModule?.command({
-      id: getModule.data.id,
+  function sendAngle(angle = pivot) {
+    void sendCommand({
+      id: module.id,
       module_type: "Servo",
       command: {
         SetAngle: {
-          angle: clamp(pivot, minPivot, maxPivot),
+          angle: clamp(angle, minPivot, maxPivot),
         },
       }
     })
   }
 
   function sendMinPivot() {
-    void getModule?.command({
-      id: getModule.data.id,
+    void sendCommand({
+      id: module.id,
       module_type: "Servo",
       command: {
         SetMinPivot: {
@@ -118,8 +115,8 @@ export function ServoCard({ info }: { info: z.infer<typeof ServoModule> }) {
   }
 
   function sendMaxPivot() {
-    void getModule?.command({
-      id: getModule.data.id,
+    void sendCommand({
+      id: module.id,
       module_type: "Servo",
       command: {
         SetMaxPivot: {
@@ -131,25 +128,29 @@ export function ServoCard({ info }: { info: z.infer<typeof ServoModule> }) {
 
   return (
     <ModuleCore
-      id={getModule.data.id}
-      manuel_id={getModule.data.lool_up_id}
-      moduletype={getModule.data.module_type}
+      id={module.id}
+      manuel_id={module.lool_up_id}
+      moduletype={module.module_type}
     >
       <div className=' flex flex-col items-center gap-2.5'>
         <h1 className=' text-3xl text-center'>
-          {getModule.data.state.angle}&deg;
+          {module.state.angle}&deg;
         </h1>
 
-        <NumberField
-          label='Pivot'
-          value={pivot}
-          onChange={setPivot}
-          onCommit={sendAngle}
-        />
-
-        <Button onClick={sendAngle}>
-          Set Angle
-        </Button>
+        <div className='flex w-full flex-col gap-2'>
+          <label className='text-xs text-accent-foreground/35'>
+            Pivot: {pivot}&deg;
+          </label>
+          <Slider
+            value={[pivot]}
+            min={minPivot}
+            max={maxPivot}
+            step={1}
+            onValueChange={([angle]) => setPivot(angle)}
+            onValueCommit={([angle]) => sendAngle(angle)}
+            aria-label='Pivot angle'
+          />
+        </div>
 
         <div className=' flex flex-row gap-2.5'>
           <NumberField
@@ -168,4 +169,4 @@ export function ServoCard({ info }: { info: z.infer<typeof ServoModule> }) {
       </div>
     </ModuleCore>
   )
-}
+});
