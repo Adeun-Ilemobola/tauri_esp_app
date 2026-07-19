@@ -1,6 +1,6 @@
 import z from "zod";
 
-const PointSchema = z.object({
+export const PointSchema = z.object({
   x: z.number(),
   y: z.number(),
 });

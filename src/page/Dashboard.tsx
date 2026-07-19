@@ -1,11 +1,15 @@
 import { ServoCard } from "@/components/Modules/Servo"
+import { PointInput } from "@/components/PointInput"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { PointSchema } from "@/lib/ModuleEven"
 import { useModuleStore } from "@/lib/ModuleStore"
 import { CubeIcon } from "@phosphor-icons/react"
+import { useState } from "react"
+import z from "zod"
 
 
-
+type Point = z.infer<typeof PointSchema>;
 
 
 export default function Dashboard() {
@@ -32,6 +36,18 @@ export default function Dashboard() {
       </div>
     )
   }
+  
+  const [pointX, setPointX] = useState<Point>({
+    x: -90,
+    y: 90
+  })
+
+  const [pointY, setPointY] = useState<Point>({
+    x: 90,
+    y: -90
+  })
+
+
   return (
     <div className="flex flex-col h-full min-h-0 w-full">
       <h1 className=' text-4xl'>Dashboard</h1>
@@ -68,6 +84,34 @@ export default function Dashboard() {
           Stop Scan
         </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          RoI
+        </CardHeader>
+        <CardContent>
+
+          <div  className=" flex flex-col w-fit justify-center items-center">
+            <h2>
+              X
+            </h2>
+            <PointInput 
+            disabled={lidar.state.state === "Scanning"}
+            point={pointX} 
+            Change={(v)=>{
+              setPointX(pre=>({...pre , ...v}))
+            }} 
+            />
+          </div>
+
+
+
+
+
+
+
+        </CardContent>
+      </Card>
 
 
       <div className=" flex  flex-row gap-3.5  items-center p-1">

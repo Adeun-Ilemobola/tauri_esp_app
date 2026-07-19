@@ -12,33 +12,47 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useListenStore } from "@/lib/ListenStore";
+import { PointSchema } from "@/lib/ModuleEven";
+import { Point } from "@/components/Grid";
+import { PointInput } from "@/components/PointInput";
+
 
 function App() {
-    const getPorts = useListenStore((state) => state.getPorts)
+  const getPorts = useListenStore((state) => state.getPorts)
 
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
 
-  const [ports , setPort] = useState<string[]>([])
+  const [ports, setPort] = useState<string[]>([])
+
+  const [maxPoint, setMaxPoint] = useState<Point>({
+    x: 0,
+    y: 0
+  })
+
+  const [minPoint, setMinPoint] = useState<Point>({
+    x: 0,
+    y: 0
+  })
 
   useEffect(() => {
-    const loadPorts = async ()=>{
+    const loadPorts = async () => {
       const data = await getPorts()
       setPort(data)
 
     }
 
     loadPorts()
-    
+
   }, [])
 
 
   async function greet() {
     setGreetMsg(await invoke("greet", { name }));
-   
+
   }
 
-  
+
 
   return (
     <div className="p-6 space-y-6">
@@ -51,6 +65,16 @@ function App() {
           {ports.length} port{ports.length === 1 ? "" : "s"}
         </Badge>
       </div>
+      <PointInput
+      disabled ={false}
+        point={minPoint}
+        Change={(p) => {
+          setMinPoint(pre => ({
+            ...pre,
+            ...p
+          }))
+        }}
+      />
 
       <Card>
         <CardHeader>
@@ -108,8 +132,13 @@ function App() {
           )}
         </CardContent>
       </Card>
+
+
+
     </div>
   );
 }
+
+
 
 export default App;

@@ -15,7 +15,7 @@ const CANVAS_WIDTH = W * BOX_SIZE + (W - 1) * GAP
 const CANVAS_HEIGHT = H * BOX_SIZE + (H - 1) * GAP
 
 
-type Point = {
+export type Point = {
     x: number
     y: number
 }
@@ -80,16 +80,18 @@ function buildPivotBoundaryIndexes(min: Point, max: Point): number[] {
 
 type gridProp = {
     setRoi: (min: Point, max: Point) => void
-    move_pos: (point: Point) => void
+    move_point: (point: Point) => void
+    min:Point,
+    max:Point
 }
 
-export default function Grid({ setRoi, move_pos }: gridProp) {
+export default function Grid({ setRoi, move_point , max , min }: gridProp) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const lastHoveredCell = useRef<string | null>(null)
     const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null)
-    const [selectedPoint, setSelectedPoint] = useState<{ p1: Point | null, p2: Point | null }>({
-        p1: null,
-        p2: null
+    const [selectedPoint, setSelectedPoint] = useState<{ p1: Point  , p2: Point  }>({
+        p1: min,
+        p2: max
     })
     const [newRoi, setNewRoi] = useState<{ min: Point, max: Point }>({
         min: { x: 0, y: 0 },
@@ -151,8 +153,9 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
 
     useEffect(() => {
         reset_grid()
+       calculatorBoundary()
 
-    }, [])
+    }, [max , min])
 
     useEffect(() => {
         build_grid()
@@ -215,6 +218,64 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
         lastHoveredCell.current = null
         setHoveredCell(null)
     }
+    function DrawPivotBoundary(fullIndexMap:number[]) {
+        setMainCell(pre => {
+                const next = [...pre]
+
+                for (let index = 0; index < next.length; index++) {
+                    const cell = next[index]
+                    next[index] = {
+                        ...cell,
+                        colour: DEFAULT_CELL_COLOUR,
+                    }
+
+                }
+
+                for (const cellIndex of fullIndexMap) {
+                    const cell = next[cellIndex]
+                    if (!cell) continue
+
+                    next[cellIndex] = {
+                        ...cell,
+                        colour: "#6e278a",
+                    }
+                }
+
+
+
+                return next
+            })
+        
+    }
+
+    function calculatorBoundary() {
+
+
+        const point2 = {
+                x: selectedPoint.p2.x,
+                y: selectedPoint.p2.y,
+            }
+            const point1 = {
+                x: selectedPoint.p1.x,
+                y: selectedPoint.p1.y,
+            }
+         const minX = Math.min(point1.x, point2.x)
+            const maxX = Math.max(point1.x, point2.x)
+
+            const minY = Math.min(point1.y, point2.y)
+            const maxY = Math.max(point1.y, point2.y)
+            setNewRoi({
+                max: { x: maxX, y: maxY },
+                min: { x: minX, y: minY }
+            })
+
+            const fullIndexMap = buildPivotBoundaryIndexes(
+                { x: minX, y: minY },
+                { x: maxX, y: maxY },
+            )
+            DrawPivotBoundary(fullIndexMap)
+        
+    }
 
     function handleClick(event: React.MouseEvent<HTMLCanvasElement>) {
         const { cell } = getCellFromPointer(event)
@@ -263,49 +324,8 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
                 { x: minX, y: minY },
                 { x: maxX, y: maxY },
             )
-
-
-
-            setMainCell(pre => {
-                const next = [...pre]
-
-                for (let index = 0; index < next.length; index++) {
-                    const cell = next[index]
-                    next[index] = {
-                        ...cell,
-                        colour: DEFAULT_CELL_COLOUR,
-                    }
-
-                }
-
-                for (const cellIndex of fullIndexMap) {
-                    const cell = next[cellIndex]
-                    if (!cell) continue
-
-                    next[cellIndex] = {
-                        ...cell,
-                        colour: "#6e278a",
-                    }
-                }
-
-
-
-                return next
-            })
-
-
-
-
-
-
-
-
+            DrawPivotBoundary(fullIndexMap)
         }
-
-
-
-
-
     }
 
     return (
@@ -334,10 +354,6 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
                 </div>
                 <Button
                     onClick={() => {
-                        setSelectedPoint({
-                            p1: null,
-                            p2: null
-                        })
                         reset_grid()
                     }}
                 >
@@ -349,8 +365,6 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
                             newRoi.min,
                             newRoi.max,
                         )
-
-
                     }}>
                     Set ROI
                     </Button>
@@ -360,7 +374,7 @@ export default function Grid({ setRoi, move_pos }: gridProp) {
                         <Button 
                         onClick={()=>{
                             if (!selectedPoint.p1) return;
-                            move_pos(selectedPoint.p1)
+                            move_point(selectedPoint.p1)
 
                         }}
 
