@@ -18,12 +18,11 @@ export const LedCard = memo(function LedCard({ module, sendCommand }: LedCardPro
   function SendCmdByText() {
     const clanp = Math.min(Math.max(data, 0), 100)
     void sendCommand({
-      id: module.id,
+       id: module.parent_id.length >5 ? module.parent_id : module.id,
       module_type: "Led",
-      command: {
-        SetState: {
-          state: clanp
-        }
+      payload: {
+        command:"SetState",
+       state: clanp
       }
     })
 
@@ -60,12 +59,10 @@ export const LedCard = memo(function LedCard({ module, sendCommand }: LedCardPro
           onClick={() => {
 
             void sendCommand({
-              id: module.id,
+               id: module.parent_id.length >5 ? module.parent_id : module.id,
               module_type: "Led",
-              command: {
-                SetState: {
-                  state: data === 0? 100: 0
-                }
+              payload: {
+               command:"Toggle",
               }
             })
 

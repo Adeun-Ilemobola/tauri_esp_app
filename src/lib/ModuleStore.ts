@@ -141,9 +141,8 @@ function modulesEqual(
   previous: ModuleDefinitionType,
   next: ModuleDefinitionType,
 ): boolean {
-  return deepEqual(previous, next);
+  return JSON.stringify(previous).trim() === JSON.stringify(next).trim() ;
 }
-
 function deepEqual(previous: unknown, next: unknown): boolean {
   if (Object.is(previous, next)) return true;
   if (typeof previous !== "object" || previous === null) return false;

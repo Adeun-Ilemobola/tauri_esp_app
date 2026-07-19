@@ -1,4 +1,5 @@
 import { ServoCard } from "@/components/Modules/Servo"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useModuleStore } from "@/lib/ModuleStore"
 import { CubeIcon } from "@phosphor-icons/react"
@@ -33,13 +34,47 @@ export default function Dashboard() {
   }
   return (
     <div className="flex flex-col h-full min-h-0 w-full">
-       <h1 className=' text-4xl'>Dashboard</h1>
+      <h1 className=' text-4xl'>Dashboard</h1>
 
-       <div className=" flex  flex-row gap-3.5  items-center p-1">
-        <ServoCard module={servoX} sendCommand={sendCommand}/>
-        <ServoCard module={servoY} sendCommand={sendCommand}/>
-       </div>
-      
+      <div className=" flex flex-row gap-6 items-center p-4">
+        <Button
+          disabled={lidar.state.state === "Scanning"}
+          variant={(lidar.state.state === "Scanning") ? "destructive" : "default"}
+          onClick={() => {
+            sendCommand({
+              id: lidar.id,
+              module_type: "Lidar",
+              payload: {
+                command: "StartScan"
+              }
+            })
+          }}
+        >
+          Start Scan
+        </Button>
+        <Button
+          disabled={lidar.state.state === "StopScan" || lidar.state.state === "Idol"}
+          variant={(lidar.state.state === "StopScan" || lidar.state.state === "Idol") ? "destructive" : "default"}
+          onClick={() => {
+            sendCommand({
+              id: lidar.id,
+              module_type: "Lidar",
+              payload: {
+                command: "StopScan"
+              }
+            })
+          }}
+        >
+          Stop Scan
+        </Button>
+      </div>
+
+
+      <div className=" flex  flex-row gap-3.5  items-center p-1">
+        <ServoCard Disable={lidar.state.state === "Scanning"} module={servoX} sendCommand={sendCommand} />
+        <ServoCard Disable={lidar.state.state === "Scanning"} module={servoY} sendCommand={sendCommand} />
+      </div>
+
     </div>
   )
 }

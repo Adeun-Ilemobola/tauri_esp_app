@@ -23,7 +23,7 @@ export default function Devices() {
             return <ButtonModule key={item.id} module={item} />
 
           case "Servo":
-            return <ServoCard key={item.id} module={item} sendCommand={sendCommand} />
+            return <ServoCard key={item.id} module={item} sendCommand={sendCommand} Disable={true} />
 
 
           default:

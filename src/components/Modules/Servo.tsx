@@ -79,9 +79,10 @@ function NumberField({
 type ServoCardProps = {
   module: z.infer<typeof ServoModule>;
   sendCommand: (command: Command) => Promise<void>;
+  Disable:boolean
 };
 
-export const ServoCard = memo(function ServoCard({ module, sendCommand }: ServoCardProps) {
+export const ServoCard = memo(function ServoCard({ module, sendCommand  , Disable= false}: ServoCardProps) {
   const [pivot, setPivot] = useState(module.state.angle);
   const [minPivot, setMinPivot] = useState(-90);
   const [maxPivot, setMaxPivot] = useState(90);
@@ -91,40 +92,50 @@ export const ServoCard = memo(function ServoCard({ module, sendCommand }: ServoC
   }, [module.state.angle]);
 
   function sendAngle(angle = pivot) {
+    if (Disable){return}
+    if (module.parent_id.length > 5) {
+      void sendCommand({
+        id: module.parent_id,
+        module_type: "Lidar",
+        payload: {
+          command: "ChangeMotorAngle",
+          id: module.id,
+          step: clamp(angle, minPivot, maxPivot)
+        }
+      })
+      return
+    }
     void sendCommand({
       id: module.id,
       module_type: "Servo",
-      command: {
-        SetAngle: {
-          angle: clamp(angle, minPivot, maxPivot),
-        },
+      payload: {
+        command: "SetAngle",
+        angle: clamp(angle, minPivot, maxPivot),
       }
     })
   }
 
-  function sendMinPivot() {
-    void sendCommand({
-      id: module.id,
-      module_type: "Servo",
-      command: {
-        SetMinPivot: {
-          min_pivot: Math.min(Math.round(minPivot), maxPivot),
-        },
-      }
-    })
-  }
+  // function sendMinPivot() {
+  //   void sendCommand({
+  //     id: module.id,
+  //     module_type: "Servo",
+  //     payload: {
+  //       command:""
+  //     }
+  //   })
+  // }
 
-  function sendMaxPivot() {
-    void sendCommand({
-      id: module.id,
-      module_type: "Servo",
-      command: {
-        SetMaxPivot: {
-          max_pivot: Math.round(Math.max(maxPivot, minPivot)),
-        },
-      }
-    })
-  }
+  // function sendMaxPivot() {
+  //   void sendCommand({
+  //     id: module.id,
+  //     module_type: "Servo",
+  //     payload: {
+  //       SetMaxPivot: {
+  //         max_pivot: Math.round(Math.max(maxPivot, minPivot)),
+  //       },
+  //     }
+  //   })
+  // }
 
   return (
     <ModuleCore
@@ -142,6 +153,7 @@ export const ServoCard = memo(function ServoCard({ module, sendCommand }: ServoC
             Pivot: {pivot}&deg;
           </label>
           <Slider
+          disabled={Disable}
             value={[pivot]}
             min={minPivot}
             max={maxPivot}
@@ -157,13 +169,13 @@ export const ServoCard = memo(function ServoCard({ module, sendCommand }: ServoC
             label='Min Pivot'
             value={minPivot}
             onChange={setMinPivot}
-            onCommit={sendMinPivot}
+            onCommit={() => { }}
           />
           <NumberField
             label='Max Pivot'
             value={maxPivot}
             onChange={setMaxPivot}
-            onCommit={sendMaxPivot}
+            onCommit={() => { }}
           />
         </div>
       </div>

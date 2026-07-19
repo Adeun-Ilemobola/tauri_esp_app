@@ -50,7 +50,7 @@ fn flush(batch: &mut Vec<ProtocolMessage>, app: &AppHandle) {
     }
 
     if let Err(err) = app.emit("serial_batch", &batch) {
-        log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
+        // log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
     }
     batch.clear();
 }
@@ -128,11 +128,11 @@ fn start_serial_listener(
                         let elapsed = first.elapsed();
 
                         if !batch.is_empty() && elapsed.as_millis() >= MAX_TIME_BETEEN {
-                            log::info!(
-                                "[serial-reader] Flushing batch on timeout — len={} elapsed={}ms",
-                                batch.len(),
-                                elapsed.as_millis()
-                            );
+                            // log::info!(
+                            //     "[serial-reader] Flushing batch on timeout — len={} elapsed={}ms",
+                            //     batch.len(),
+                            //     elapsed.as_millis()
+                            // );
 
                             flush(&mut batch, &app);
                             first_stamp = None;
@@ -151,15 +151,15 @@ fn start_serial_listener(
                     let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
 
-                    log::debug!(
-                        "[serial-reader] Line #{} received ({} bytes raw): {:?}",
-                        line_count,
-                        bytes_read,
-                        trimmed
-                    );
+                    // log::debug!(
+                    //     "[serial-reader] Line #{} received ({} bytes raw): {:?}",
+                    //     line_count,
+                    //     bytes_read,
+                    //     trimmed
+                    // );
 
                     if trimmed.is_empty() {
-                        log::debug!("[serial-reader] Line #{} is empty, skipping", line_count);
+                        // log::debug!("[serial-reader] Line #{} is empty, skipping", line_count);
                         // buf.clear();
                         continue;
                     }
@@ -186,16 +186,16 @@ fn start_serial_listener(
                                 let batch_full = batch.len() >= MAXBACTH;
                                 let batch_timed_out = elapsed.as_millis() >= MAX_TIME_BETEEN;
                                 if batch_full || batch_timed_out {
-                                    log::info!(
-                                        "[serial-reader] Flushing batch — len={} elapsed={}ms reason={}",
-                                        batch.len(),
-                                        elapsed.as_millis(),
-                                        if batch_full {
-                                            "max batch size reached"
-                                        } else {
-                                            "max wait time reached"
-                                        }
-                                    );
+                                    // log::info!(
+                                    //     "[serial-reader] Flushing batch — len={} elapsed={}ms reason={}",
+                                    //     batch.len(),
+                                    //     elapsed.as_millis(),
+                                    //     if batch_full {
+                                    //         "max batch size reached"
+                                    //     } else {
+                                    //         "max wait time reached"
+                                    //     }
+                                    // );
                                     flush(&mut batch, &app);
 
                                     first_stamp = None;
