@@ -1,3 +1,4 @@
+import Grid from "@/components/Grid"
 import { ServoCard } from "@/components/Modules/Servo"
 import { PointInput } from "@/components/PointInput"
 import { Button } from "@/components/ui/button"
@@ -36,20 +37,14 @@ export default function Dashboard() {
       </div>
     )
   }
-  
-  const [pointX, setPointX] = useState<Point>({
-    x: -90,
-    y: 90
-  })
 
-  const [pointY, setPointY] = useState<Point>({
-    x: 90,
-    y: -90
-  })
+  const [pointMax, setPointMax] = useState<Point>(lidar.state.ROI.max)
+
+  const [pointMin, setPointMin] = useState<Point>(lidar.state.ROI.min)
 
 
   return (
-    <div className="flex flex-col h-full min-h-0 w-full">
+    <div className="flex flex-col gap-2 h-full min-h-0 w-full p-1.5">
       <h1 className=' text-4xl'>Dashboard</h1>
 
       <div className=" flex flex-row gap-6 items-center p-4">
@@ -85,31 +80,38 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="shrink-0">
         <CardHeader>
           RoI
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-wrap items-center gap-4">
 
-          <div  className=" flex flex-col w-fit justify-center items-center">
+          <div className=" flex flex-col w-fit justify-center items-center">
             <h2>
-              X
+              Max Pont
             </h2>
-            <PointInput 
-            disabled={lidar.state.state === "Scanning"}
-            point={pointX} 
-            Change={(v)=>{
-              setPointX(pre=>({...pre , ...v}))
-            }} 
+            <PointInput
+              disabled={lidar.state.state === "Scanning"}
+              point={pointMax}
+              Change={(v) => {
+                setPointMax(pre => ({ ...pre, ...v }))
+              }}
             />
           </div>
 
 
-
-
-
-
-
+          <div className=" flex flex-col w-fit justify-center items-center">
+            <h2>
+              Min
+            </h2>
+            <PointInput
+              disabled={lidar.state.state === "Scanning"}
+              point={pointMin}
+              Change={(v) => {
+                setPointMin(pre => ({ ...pre, ...v }))
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -118,6 +120,35 @@ export default function Dashboard() {
         <ServoCard Disable={lidar.state.state === "Scanning"} module={servoX} sendCommand={sendCommand} />
         <ServoCard Disable={lidar.state.state === "Scanning"} module={servoY} sendCommand={sendCommand} />
       </div>
+
+      <Grid
+        move_point={(p) => {
+          sendCommand({
+            id:lidar.id,
+            module_type:"Lidar",
+            payload:{
+              command:"MovePos",
+              p:p
+            }
+          })
+
+        }}
+        max={pointMax}
+        min={pointMin}
+        setRoi={() => {
+          sendCommand({
+            id:lidar.id,
+            module_type:"Lidar",
+            payload:{
+              command:"Roi",
+              min:pointMin,
+              max:pointMax
+            }
+          })
+
+        }}
+
+      />
 
     </div>
   )

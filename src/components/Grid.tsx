@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 
 const MIN_ANGLE = -90
@@ -81,17 +82,33 @@ function buildPivotBoundaryIndexes(min: Point, max: Point): number[] {
 type gridProp = {
     setRoi: (min: Point, max: Point) => void
     move_point: (point: Point) => void
-    min:Point,
-    max:Point
+    min: Point,
+    max: Point
+}
+type SelectedPointBase = {
+    p1: {
+        point: Point,
+        selected: boolean
+    }
+    p2: {
+        point: Point,
+        selected: boolean
+    }
 }
 
-export default function Grid({ setRoi, move_point , max , min }: gridProp) {
+export default function Grid({ setRoi, move_point, max, min }: gridProp) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const lastHoveredCell = useRef<string | null>(null)
     const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null)
-    const [selectedPoint, setSelectedPoint] = useState<{ p1: Point  , p2: Point  }>({
-        p1: min,
-        p2: max
+    const [selectedPoint, setSelectedPoint] = useState<SelectedPointBase>({
+        p1: {
+            point: min,
+            selected: false
+        },
+        p2: {
+            point: max,
+            selected: false
+        },
     })
     const [newRoi, setNewRoi] = useState<{ min: Point, max: Point }>({
         min: { x: 0, y: 0 },
@@ -152,10 +169,36 @@ export default function Grid({ setRoi, move_point , max , min }: gridProp) {
 
 
     useEffect(() => {
-        reset_grid()
-       calculatorBoundary()
 
-    }, [max , min])
+        if (max != selectedPoint.p2.point){
+            setSelectedPoint(pre => ({
+                ...pre,
+                p2: {
+                    ...pre.p2,
+                    point:max,
+                    selected:false
+                },
+              
+            }))
+        }
+
+         if (min != selectedPoint.p1.point){
+            setSelectedPoint(pre => ({
+                ...pre,
+                p1: {
+                    ...pre.p1,
+                    point:max,
+                    selected:false
+                },
+              
+            }))
+        }
+
+
+        reset_grid()
+        calculatorBoundary()
+
+    }, [max, min])
 
     useEffect(() => {
         build_grid()
@@ -218,63 +261,63 @@ export default function Grid({ setRoi, move_point , max , min }: gridProp) {
         lastHoveredCell.current = null
         setHoveredCell(null)
     }
-    function DrawPivotBoundary(fullIndexMap:number[]) {
+    function DrawPivotBoundary(fullIndexMap: number[]) {
         setMainCell(pre => {
-                const next = [...pre]
+            const next = [...pre]
 
-                for (let index = 0; index < next.length; index++) {
-                    const cell = next[index]
-                    next[index] = {
-                        ...cell,
-                        colour: DEFAULT_CELL_COLOUR,
-                    }
-
+            for (let index = 0; index < next.length; index++) {
+                const cell = next[index]
+                next[index] = {
+                    ...cell,
+                    colour: DEFAULT_CELL_COLOUR,
                 }
 
-                for (const cellIndex of fullIndexMap) {
-                    const cell = next[cellIndex]
-                    if (!cell) continue
+            }
 
-                    next[cellIndex] = {
-                        ...cell,
-                        colour: "#6e278a",
-                    }
+            for (const cellIndex of fullIndexMap) {
+                const cell = next[cellIndex]
+                if (!cell) continue
+
+                next[cellIndex] = {
+                    ...cell,
+                    colour: "#6e278a",
                 }
+            }
 
 
 
-                return next
-            })
-        
+            return next
+        })
+
     }
 
     function calculatorBoundary() {
 
 
         const point2 = {
-                x: selectedPoint.p2.x,
-                y: selectedPoint.p2.y,
-            }
-            const point1 = {
-                x: selectedPoint.p1.x,
-                y: selectedPoint.p1.y,
-            }
-         const minX = Math.min(point1.x, point2.x)
-            const maxX = Math.max(point1.x, point2.x)
+            x: selectedPoint.p2.point.x,
+            y: selectedPoint.p2.point.y,
+        }
+        const point1 = {
+            x: selectedPoint.p1.point.x,
+            y: selectedPoint.p1.point.y,
+        }
+        const minX = Math.min(point1.x, point2.x)
+        const maxX = Math.max(point1.x, point2.x)
 
-            const minY = Math.min(point1.y, point2.y)
-            const maxY = Math.max(point1.y, point2.y)
-            setNewRoi({
-                max: { x: maxX, y: maxY },
-                min: { x: minX, y: minY }
-            })
+        const minY = Math.min(point1.y, point2.y)
+        const maxY = Math.max(point1.y, point2.y)
+        setNewRoi({
+            max: { x: maxX, y: maxY },
+            min: { x: minX, y: minY }
+        })
 
-            const fullIndexMap = buildPivotBoundaryIndexes(
-                { x: minX, y: minY },
-                { x: maxX, y: maxY },
-            )
-            DrawPivotBoundary(fullIndexMap)
-        
+        const fullIndexMap = buildPivotBoundaryIndexes(
+            { x: minX, y: minY },
+            { x: maxX, y: maxY },
+        )
+        DrawPivotBoundary(fullIndexMap)
+
     }
 
     function handleClick(event: React.MouseEvent<HTMLCanvasElement>) {
@@ -285,46 +328,38 @@ export default function Grid({ setRoi, move_point , max , min }: gridProp) {
         const index = pivotToIndex(pivot)
         const foundCell = mainCell[index]
 
-        if (!foundCell) return
+        if (!foundCell ) return
 
-        if (selectedPoint.p1 === null) {
+        toast.success("Point found")
+
+        if (selectedPoint.p1.selected === false) {
             // toast.success(`Point 1 selected (${foundCell.x}, ${foundCell.y})`, { duration: 1000 })
-            setSelectedPoint(pre => ({ ...pre, p1: { x: foundCell.x, y: foundCell.y } }))
+            setSelectedPoint(pre => ({
+                ...pre,
+                p1: {
+                    ...pre.p1,
+                    point:{x:foundCell.x , y:foundCell.y},
+                    selected:true
+                },
+              
+            }))
             return
         }
-        if (selectedPoint.p2 === null) {
-            reset_grid()
+        if (selectedPoint.p2.selected === false) {
 
-            // toast.success(`Point 2 selected (${foundCell.x}, ${foundCell.y})`, { duration: 1000 })
-            const point2 = {
-                x: foundCell.x,
-                y: foundCell.y,
-            }
-            const point1 = {
-                x: selectedPoint.p1.x,
-                y: selectedPoint.p1.y,
-            }
-
-            setSelectedPoint(previous => ({
-                ...previous,
-                p2: point2,
+           setSelectedPoint(pre => ({
+                ...pre,
+                p2: {
+                    ...pre.p2,
+                    point:{x:foundCell.x , y:foundCell.y},
+                     selected:true
+                },
+              
             }))
+            reset_grid()
+            calculatorBoundary()
 
-            const minX = Math.min(point1.x, point2.x)
-            const maxX = Math.max(point1.x, point2.x)
-
-            const minY = Math.min(point1.y, point2.y)
-            const maxY = Math.max(point1.y, point2.y)
-            setNewRoi({
-                max: { x: maxX, y: maxY },
-                min: { x: minX, y: minY }
-            })
-
-            const fullIndexMap = buildPivotBoundaryIndexes(
-                { x: minX, y: minY },
-                { x: maxX, y: maxY },
-            )
-            DrawPivotBoundary(fullIndexMap)
+            return
         }
     }
 
@@ -335,55 +370,74 @@ export default function Grid({ setRoi, move_point , max , min }: gridProp) {
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <div className=" flex flex-row gap-1.5 items-center">
                         <p>Point 1</p>
-                        <Badge variant={selectedPoint.p1 ? "secondary" : "destructive"}>
-                            {selectedPoint.p1
-                                ? `(${selectedPoint.p1.x} , ${selectedPoint.p1.y})`
+                        <Badge variant={selectedPoint.p1.selected ? "secondary" : "destructive"}>
+                            {selectedPoint.p1.selected
+                                ? `(${selectedPoint.p1.point.x} , ${selectedPoint.p1.point.y})`
                                 : "No Point"}
                         </Badge>
                     </div>
 
                     <div className=" flex flex-row gap-1.5 items-center">
                         <p>Point 2</p>
-                        <Badge variant={selectedPoint.p2 ? "secondary" : "destructive"}>
-                            {selectedPoint.p2
-                                ? `(${selectedPoint.p2.x} , ${selectedPoint.p2.y})`
+                        <Badge variant={selectedPoint.p2.selected ? "secondary" : "destructive"}>
+                            {selectedPoint.p2.selected
+                                ? `(${selectedPoint.p2.point.x} , ${selectedPoint.p2.point.y})`
                                 : "No Point"}
                         </Badge>
                     </div>
 
                 </div>
-                <Button
-                    onClick={() => {
-                        reset_grid()
-                    }}
-                >
-                    Clear
-                </Button>
-                {(selectedPoint.p1 && selectedPoint.p2) && (<>
+
+
+                <div className=" flex flex-row gap-3 p-1">
+                    <Button
+                        onClick={() => {
+                            reset_grid()
+                            calculatorBoundary()
+                            setSelectedPoint(pre => ({
+                                ...pre,
+                                p1: {
+                                    ...pre.p1,
+                                    selected: false
+                                },
+                                p2: {
+                                    ...pre.p2,
+                                    selected: false
+                                }
+                            }))
+                        }}
+                    >
+                        Clear
+                    </Button>
+
+
                     <Button disabled={selectedPoint.p1 === null || selectedPoint.p2 === null} onClick={() => {
                         setRoi(
                             newRoi.min,
                             newRoi.max,
                         )
                     }}>
-                    Set ROI
+                        Set ROI
                     </Button>
-                </>)}
 
-                {selectedPoint.p1 && (<>
-                        <Button 
-                        onClick={()=>{
+
+
+                    <Button
+                        onClick={() => {
                             if (!selectedPoint.p1) return;
-                            move_point(selectedPoint.p1)
+                            move_point(selectedPoint.p1.point)
 
                         }}
 
-                        >
-                            Move to point
-                        </Button>
-                
-                
-                </>)}
+                    >
+                        Move to point
+                    </Button>
+                </div>
+
+
+
+
+
 
 
 

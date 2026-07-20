@@ -67,6 +67,43 @@ const LidarEventSchema = z.discriminatedUnion("event_type", [
   }),
 ]);
 
+const RangefinderDistanceModeSchema = z.enum([
+  "Short",
+  "Long",
+]);
+
+const RangefinderEventSchema = z.discriminatedUnion("event_type", [
+  z.object({
+    event_type: z.literal("Range"),
+    id: z.string(),
+    millimeters: z.number().int().nonnegative(),
+  }),
+
+  z.object({
+    event_type: z.literal("RangingState"),
+    id: z.string(),
+    is_ranging: z.boolean(),
+  }),
+
+  z.object({
+    event_type: z.literal("TimingBudget"),
+    id: z.string(),
+    milliseconds: z.number().int().nonnegative(),
+  }),
+
+  z.object({
+    event_type: z.literal("DistanceMode"),
+    id: z.string(),
+    mode: RangefinderDistanceModeSchema,
+  }),
+
+  z.object({
+    event_type: z.literal("InvalidMeasurement"),
+    id: z.string(),
+    status: z.string(),
+  }),
+]);
+
 const ButtonEventSchema = z.discriminatedUnion("event_type", [
   z.object({
     event_type: z.literal("Ckick"),
@@ -86,6 +123,7 @@ export const ModuleEventSchema = z.discriminatedUnion("module_type", [
   z.object({ module_type: z.literal("Lidar"), event: LidarEventSchema }),
   z.object({ module_type: z.literal("Button"), event: ButtonEventSchema }),
   z.object({ module_type: z.literal("SysLog"), event: SysLogEventSchema }),
+  z.object({ module_type: z.literal("Rangefinder"), event: RangefinderEventSchema }),
 ]);
 
 export type ModuleEventEnvelope = z.infer<typeof ModuleEventSchema>;

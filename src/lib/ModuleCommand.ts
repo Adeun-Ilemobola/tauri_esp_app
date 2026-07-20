@@ -51,6 +51,35 @@ export const PointSchema = z.object({
   y: z.number().int(),
 });
 
+export const RangefinderDistanceModeSchema = z.enum([
+  "Short",
+  "Long",
+]);
+
+export const RangefinderCommandTypeSchema = z.discriminatedUnion("command", [
+  z.object({
+    command: z.literal("StartRanging"),
+  }),
+
+  z.object({
+    command: z.literal("StopRanging"),
+  }),
+
+  z.object({
+    command: z.literal("SetTimingBudget"),
+    milliseconds: z.number().int().positive(),
+  }),
+
+  z.object({
+    command: z.literal("SetDistanceMode"),
+    mode: RangefinderDistanceModeSchema,
+  }),
+]);
+
+export type RangefinderDistanceMode = z.infer<
+  typeof RangefinderDistanceModeSchema
+>;
+
 export const LidarCommandTypeSchema = z.discriminatedUnion("command", [
   z.object({
     command: z.literal("Roi"),
@@ -101,6 +130,11 @@ export const ModuleCommandSchema = z.discriminatedUnion("module_type", [
     id: z.string(),
     module_type: z.literal(moduleTypeIdentifier.enum.Lidar),
     payload: LidarCommandTypeSchema,
+  }),
+  z.object({
+    id: z.string(),
+    module_type: z.literal(moduleTypeIdentifier.enum.Rangefinder),
+    payload: RangefinderCommandTypeSchema,
   }),
 ]);
 

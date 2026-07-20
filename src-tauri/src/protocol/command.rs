@@ -18,7 +18,8 @@ pub enum ModuleCommand {
     Led(LedCommandPayload),
     ClusterLeds(ClusterCommandPayload),
     Servo(ServoCommandPayload),
-    Lidar(LidarCommandPayload)
+    Lidar(LidarCommandPayload),
+    Rangefinder(RangefinderCommandPayload)
 }
 
 #[derive(Debug, Deserialize  , Serialize , Clone)]
@@ -70,3 +71,26 @@ pub enum  LidarCommandPayload  {
 
 
 
+// ---- RangeFinder
+#[derive(Debug, Deserialize  , Serialize , Clone)]
+pub enum RangefinderDistanceMode {
+    Short,
+    Long,
+}
+
+#[derive(Debug, Deserialize  , Serialize , Clone)]
+#[serde(tag = "command", )]
+
+pub enum RangefinderCommandPayload {
+    StartRanging,
+    StopRanging,
+
+    SetTimingBudget {
+        milliseconds: u16,
+    },
+
+
+    SetDistanceMode {
+        mode: RangefinderDistanceMode,
+    },
+}

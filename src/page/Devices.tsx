@@ -6,6 +6,7 @@ import {ButtonModule} from '@/components/Modules/ButtonModule'
 import { LedCard } from '@/components/Modules/led'
 import { useModuleStore } from '@/lib/ModuleStore'
 import { ServoCard } from '@/components/Modules/Servo'
+import { RangefinderCard } from '@/components/Modules/Rangefinder'
 
 
 export default function Devices() {
@@ -24,6 +25,9 @@ export default function Devices() {
 
           case "Servo":
             return <ServoCard key={item.id} module={item} sendCommand={sendCommand} Disable={true} />
+
+          case "Rangefinder":
+            return <RangefinderCard key={item.id} module={item} sendCommand={sendCommand} />
 
 
           default:
