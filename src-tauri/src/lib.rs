@@ -1,9 +1,11 @@
 mod shared_types;
 mod protocol;
-use tauri_plugin_log::{Target, TargetKind};
+mod  global_definition;
 
-use crate::shared_types::state::{MAX_TIME_BETEEN, MAXBACTH, SerialParseError, SerialRuntime};
-use crate::{protocol::command::IncomingCommand, shared_types::state::SerialState};
+
+use crate::global_definition::{MAX_TIME_BETEEN, MAXBACTH, SerialParseError, SerialState};
+use crate::shared_types::state::SerialRuntime;
+use crate::{protocol::command::IncomingCommand, };
 use crate::protocol::registration::ProtocolMessage;
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
@@ -50,7 +52,7 @@ fn flush(batch: &mut Vec<ProtocolMessage>, app: &AppHandle) {
     }
 
     if let Err(err) = app.emit("serial_batch", &batch) {
-        // log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
+        log::error!("[serial-reader] Failed to emit serial_batch: {:?}", err);
     }
     batch.clear();
 }
@@ -110,7 +112,7 @@ fn start_serial_listener(
 
         let mut reader = BufReader::new(reader_port);
         let mut buf: Vec<u8> = Vec::new();
-        let mut line_count: u64 = 0;
+        // let mut line_count: u64 = 0;
 
         let mut batch: Vec<ProtocolMessage> = Vec::new();
         let mut first_stamp: Option<Instant> = None;
@@ -146,8 +148,8 @@ fn start_serial_listener(
                     break;
                 }
 
-                Ok(bytes_read) => {
-                    line_count += 1;
+                Ok(_bytes_read) => {
+                    // line_count += 1;
                     let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
 
@@ -226,8 +228,8 @@ fn start_serial_listener(
     });
 
     *guard = Some(SerialRuntime::new(
-        port_name.clone(),
-        baud_rate,
+        // port_name.clone(),
+        // baud_rate,
         port,
         _handle,
         stop_flag,

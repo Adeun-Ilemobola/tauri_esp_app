@@ -1,32 +1,47 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { memo, useState } from 'react';
-import ModuleCore from './ModuleCore';
-import z from 'zod';
-import { Command } from '@/lib/ModuleCommand';
-import { LedModule } from '@/lib/ModuleDefinitionSchema';
-
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { Command } from "@/lib/ModuleCommand";
+import { LedModule } from "@/lib/Modules/LED";
+import { memo, useEffect, useState } from "react";
+import z from "zod";
+import ModuleCore from "./ModuleCore";
 
 type LedCardProps = {
   module: z.infer<typeof LedModule>;
   sendCommand: (command: Command) => Promise<void>;
 };
 
-export const LedCard = memo(function LedCard({ module, sendCommand }: LedCardProps) {
+export const LedCard = memo(function LedCard({
+  module,
+  sendCommand,
+}: LedCardProps) {
   const [data, setData] = useState(module.state.brightness);
 
-  function SendCmdByText() {
-    const clanp = Math.min(Math.max(data, 0), 100)
+  useEffect(() => {
+    setData(module.state.brightness);
+  }, [module.state.brightness]);
+
+  function sendState() {
+    const state = Math.min(Math.max(data, 0), 100);
+
     void sendCommand({
-       id: module.parent_id.length >5 ? module.parent_id : module.id,
+      id: module.parent_id.length > 5 ? module.parent_id : module.id,
       module_type: "Led",
       payload: {
-        command:"SetState",
-       state: clanp
-      }
-    })
+        command: "SetState",
+        state,
+      },
+    });
+  }
 
-
+  function toggle() {
+    void sendCommand({
+      id: module.parent_id.length > 5 ? module.parent_id : module.id,
+      module_type: "Led",
+      payload: {
+        command: "Toggle",
+      },
+    });
   }
 
   return (
@@ -35,55 +50,24 @@ export const LedCard = memo(function LedCard({ module, sendCommand }: LedCardPro
       manuel_id={module.lool_up_id}
       moduletype={module.module_type}
     >
-      <div className=' flex flex-col items-center gap-2.5'>
-        <h1 className=' text-3xl text-center  w-10'>
-          {data}
-        </h1>
-
+      <div className="flex flex-col items-center gap-2.5">
+        <h1 className="w-10 text-center text-3xl">{data}</h1>
 
         <Input
           value={data}
-          onChange={(e) => {
-            const raw = e.target.value;
-            setData(raw === "" ? 0 : parseInt(raw) || 0);
+          onChange={(event) => {
+            const raw = event.target.value;
+            setData(raw === "" ? 0 : parseInt(raw, 10) || 0);
           }}
-          onKeyDown={(e) => {
-            if (e.key != 'Enter') return;
-            e.preventDefault();
-            SendCmdByText()
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            sendState();
           }}
-
         />
 
-        <Button
-          onClick={() => {
-
-            void sendCommand({
-               id: module.parent_id.length >5 ? module.parent_id : module.id,
-              module_type: "Led",
-              payload: {
-               command:"Toggle",
-              }
-            })
-
-          }}
-        >
-          Toggle
-        </Button>
-
-
-
+        <Button onClick={toggle}>Toggle</Button>
       </div>
     </ModuleCore>
-
-
-
-
-
-  )
-
-
-
-
-
+  );
 });

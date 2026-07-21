@@ -5,8 +5,15 @@ import { ModuleEventEnvelope } from "./ModuleEven";
 import {
   ModuleDefinitionType,
   Registration,
-  TypeIdentifier,
 } from "./ModuleDefinitionSchema";
+import { buttonInitialBuild, updateButton } from "./Modules/BUTTON";
+import { ledInitialBuild, updateLed } from "./Modules/LED";
+import { lidarInitialBuild, updateLidar } from "./Modules/LIDAR";
+import {
+  rangefinderInitialBuild,
+  updateRangefinder,
+} from "./Modules/RANGEFINDER";
+import { servoInitialBuild, updateServo } from "./Modules/SERVO";
 
 
 type ModuleStore = {
@@ -92,119 +99,19 @@ function applyModuleEvent(
 ): ModuleDefinitionType {
   switch (event.module_type) {
     case "Led":
-      if (!isModuleType(module, "Led")) return module;
-      return {
-        ...module,
-        state: { brightness: event.event.level },
-      };
+      return updateLed(module, event.event);
 
     case "Button":
-      if (!isModuleType(module, "Button")) return module;
-      return {
-        ...module,
-        state: { on: !module.state.on },
-      };
+      return updateButton(module, event.event);
 
     case "Servo":
-      if (!isModuleType(module, "Servo")) return module;
-      if (event.event.event_type !== "GetAngle") return module;
-      return {
-        ...module,
-        state: { angle: event.event.angle },
-      };
+      return updateServo(module, event.event);
 
     case "Lidar":
-      if (!isModuleType(module, "Lidar")) return module;
-
-      if (event.event.event_type === "ScanState") {
-        return {
-          ...module,
-          state: { ...module.state, state: event.event.state },
-        };
-      }
-
-      if (event.event.event_type === "Roi") {
-        console.debug(`New Roi ->  min : ${event.event.min} | max : ${event.event.max}`)
-        return {
-          ...module,
-          state: {
-            ...module.state,
-            ROI: {
-              max: event.event.max,
-              min: event.event.min
-            }
-          },
-        };
-      }
-
-      if (event.event.event_type === "PointMap") {
-        return {
-          ...module,
-          state: {
-            ...module.state,
-            map: event.event.map.map(({ x, y, distant }) => ({ x, y, distant })),
-          },
-        };
-      }
-
-      return module;
+      return updateLidar(module, event.event);
 
     case "Rangefinder":
-      if (!isModuleType(module, "Rangefinder")) {
-        return module;
-      }
-      switch (event.event.event_type) {
-        case "Range":
-          return {
-            ...module,
-            state: {
-              ...module.state,
-              range_mm: event.event.millimeters,
-              last_invalid_status: null,
-            },
-          };
-
-        case "RangingState":
-          return {
-            ...module,
-            state: {
-              ...module.state,
-              is_ranging: event.event.is_ranging,
-            },
-          };
-
-        case "TimingBudget":
-          return {
-            ...module,
-            state: {
-              ...module.state,
-              timing_budget_ms: event.event.milliseconds,
-            },
-          };
-
-        case "DistanceMode":
-          return {
-            ...module,
-            state: {
-              ...module.state,
-              distance_mode: event.event.mode,
-            },
-          };
-
-        case "InvalidMeasurement":
-          return {
-            ...module,
-            state: {
-              ...module.state,
-              last_invalid_status: event.event.status,
-            },
-          };
-
-
-      }
-
-
-      return module;
+      return updateRangefinder(module, event.event);
   }
 }
 
@@ -214,111 +121,47 @@ function modulesEqual(
 ): boolean {
   return JSON.stringify(previous).trim() === JSON.stringify(next).trim();
 }
-function deepEqual(previous: unknown, next: unknown): boolean {
-  if (Object.is(previous, next)) return true;
-  if (typeof previous !== "object" || previous === null) return false;
-  if (typeof next !== "object" || next === null) return false;
-
-  if (Array.isArray(previous) || Array.isArray(next)) {
-    if (!Array.isArray(previous) || !Array.isArray(next)) return false;
-    if (previous.length !== next.length) return false;
-    return previous.every((value, index) => deepEqual(value, next[index]));
-  }
-
-  const previousRecord = previous as Record<string, unknown>;
-  const nextRecord = next as Record<string, unknown>;
-  const previousKeys = Object.keys(previousRecord);
-  const nextKeys = Object.keys(nextRecord);
-
-  if (previousKeys.length !== nextKeys.length) return false;
-
-  return previousKeys.every(
-    (key) => Object.prototype.hasOwnProperty.call(nextRecord, key)
-      && deepEqual(previousRecord[key], nextRecord[key]),
-  );
-}
 
 function createModule(
   registration: Registration,
 ): ModuleDefinitionType | undefined {
   switch (registration.module_type) {
     case "Led":
-      return {
-        id: registration.id,
-        parent_id: registration.parent_id,
-        module_type: "Led",
-        lool_up_id: registration.lool_up_id,
-        state: {
-          brightness: 0,
-        },
-      };
+      return ledInitialBuild(
+        registration.id,
+        registration.parent_id,
+        registration.lool_up_id,
+      );
 
     case "Button":
-      return {
-        id: registration.id,
-        parent_id: registration.parent_id,
-        module_type: "Button",
-        lool_up_id: registration.lool_up_id,
-        state: {
-          on: false,
-        },
-      };
+      return buttonInitialBuild(
+        registration.id,
+        registration.parent_id,
+        registration.lool_up_id,
+      );
 
     case "Servo":
-      return {
-        id: registration.id,
-        parent_id: registration.parent_id,
-        module_type: "Servo",
-        lool_up_id: registration.lool_up_id,
-        state: {
-          angle: 0,
-        },
-      };
+      return servoInitialBuild(
+        registration.id,
+        registration.parent_id,
+        registration.lool_up_id,
+      );
 
     case "Lidar":
-      return {
-        id: registration.id,
-        parent_id: registration.parent_id,
-        module_type: "Lidar",
-        lool_up_id: registration.lool_up_id,
-        state: {
-          state: "Idol",
-          map: [],
-          ROI: {
-            max: { x: 0, y: 0 },
-            min: { x: 0, y: 0 },
-          }
-        },
-      };
+      return lidarInitialBuild(
+        registration.id,
+        registration.parent_id,
+        registration.lool_up_id,
+      );
 
     case "Rangefinder":
-      return {
-        id: registration.id,
-        parent_id: registration.parent_id,
-        module_type: "Rangefinder",
-        lool_up_id: registration.lool_up_id,
-        state: {
-      range_mm: 0,
-      is_ranging: false,
-      timing_budget_ms: 50,
-      distance_mode: "Long",
-      last_invalid_status: null,
-    },
-      };
-
+      return rangefinderInitialBuild(
+        registration.id,
+        registration.parent_id,
+        registration.lool_up_id,
+      );
 
     default:
       return undefined;
   }
-}
-
-
-function isModuleType<T extends TypeIdentifier>(
-  module: ModuleDefinitionType,
-  type: T,
-): module is Extract<
-  ModuleDefinitionType,
-  { module_type: T }
-> {
-  return module.module_type === type;
 }

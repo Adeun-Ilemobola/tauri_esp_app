@@ -1,115 +1,9 @@
 import z from "zod";
-
-export const PointSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-});
-
-const RangPointSchema = z.object({
-  event_type: z.literal("RangPoint"),
-  x: z.number(),
-  y: z.number(),
-  distant: z.number(),
-});
-
-const LedEventSchema = z.discriminatedUnion("event_type", [
-  z.object({
-    event_type: z.literal("Brightness"),
-    id: z.string(),
-    level: z.number(),
-  }),
-]);
-
-const ServoEventSchema = z.discriminatedUnion("event_type", [
-  z.object({
-    event_type: z.literal("GetAngle"),
-    id: z.string(),
-    angle: z.number(),
-  }),
-  z.object({
-    event_type: z.literal("GetMinPivot"),
-    id: z.string(),
-    min_pivot: z.number(),
-  }),
-  z.object({
-    event_type: z.literal("GetMaxPivot"),
-    id: z.string(),
-    max_pivot: z.number(),
-  }),
-  z.object({
-    event_type: z.literal("GetOffset"),
-    id: z.string(),
-    angle: z.number(),
-  }),
-]);
-
-const LidarEventSchema = z.discriminatedUnion("event_type", [
-  z.object({
-    event_type: z.literal("Roi"),
-    id: z.string(),
-    min: PointSchema,
-    max: PointSchema,
-  }),
-  z.object({
-    event_type: z.literal("PointMap"),
-    id: z.string(),
-    map: z.array(RangPointSchema),
-  }),
-  z.object({
-    event_type: z.literal("Target"),
-    id: z.string(),
-    point: PointSchema,
-  }),
-  z.object({
-    event_type: z.literal("ScanState"),
-    id: z.string(),
-    state: z.enum(["Idol", "Scanning", "StopScan"]),
-  }),
-]);
-
-const RangefinderDistanceModeSchema = z.enum([
-  "Short",
-  "Long",
-]);
-
-const RangefinderEventSchema = z.discriminatedUnion("event_type", [
-  z.object({
-    event_type: z.literal("Range"),
-    id: z.string(),
-    millimeters: z.number().int().nonnegative(),
-  }),
-
-  z.object({
-    event_type: z.literal("RangingState"),
-    id: z.string(),
-    is_ranging: z.boolean(),
-  }),
-
-  z.object({
-    event_type: z.literal("TimingBudget"),
-    id: z.string(),
-    milliseconds: z.number().int().nonnegative(),
-  }),
-
-  z.object({
-    event_type: z.literal("DistanceMode"),
-    id: z.string(),
-    mode: RangefinderDistanceModeSchema,
-  }),
-
-  z.object({
-    event_type: z.literal("InvalidMeasurement"),
-    id: z.string(),
-    status: z.string(),
-  }),
-]);
-
-const ButtonEventSchema = z.discriminatedUnion("event_type", [
-  z.object({
-    event_type: z.literal("Ckick"),
-    id: z.string(),
-  }),
-]);
+import { ButtonEventSchema } from "./Modules/BUTTON";
+import { LedEventSchema } from "./Modules/LED";
+import { LidarEventSchema, PointSchema } from "./Modules/LIDAR";
+import { RangefinderEventSchema } from "./Modules/RANGEFINDER";
+import { ServoEventSchema } from "./Modules/SERVO";
 
 const SysLogEventSchema = z.object({
   text: z.string(),
@@ -123,7 +17,20 @@ export const ModuleEventSchema = z.discriminatedUnion("module_type", [
   z.object({ module_type: z.literal("Lidar"), event: LidarEventSchema }),
   z.object({ module_type: z.literal("Button"), event: ButtonEventSchema }),
   z.object({ module_type: z.literal("SysLog"), event: SysLogEventSchema }),
-  z.object({ module_type: z.literal("Rangefinder"), event: RangefinderEventSchema }),
+  z.object({
+    module_type: z.literal("Rangefinder"),
+    event: RangefinderEventSchema,
+  }),
 ]);
 
 export type ModuleEventEnvelope = z.infer<typeof ModuleEventSchema>;
+
+export {
+  ButtonEventSchema,
+  LedEventSchema,
+  LidarEventSchema,
+  PointSchema,
+  RangefinderEventSchema,
+  ServoEventSchema,
+  SysLogEventSchema,
+};

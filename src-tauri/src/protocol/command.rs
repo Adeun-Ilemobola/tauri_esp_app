@@ -1,9 +1,6 @@
 use serde::{Deserialize ,Serialize};
 
-use crate::protocol::module_event::Point;
-
-
-
+use crate::protocol::global_definition_protocol::Point;
 
 #[derive(Debug, Deserialize  , Serialize , Clone)]
 pub struct IncomingCommand {
@@ -68,6 +65,7 @@ pub enum  LidarCommandPayload  {
         p:Point
     }    
 }
+// global_definition_protocol
 
 
 
