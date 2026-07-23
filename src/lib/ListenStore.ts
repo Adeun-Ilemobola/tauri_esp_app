@@ -26,7 +26,9 @@ export const InComingMessageSchema = z.discriminatedUnion("type", [
     }),
 ])
 
-export const InComingMessageBatchSchema = z.array(InComingMessageSchema)
+// Validate messages individually so one malformed serial message does not
+// discard every otherwise-valid message received in the same batch.
+export const InComingMessageBatchSchema = z.array(z.unknown())
 
 export type InComingMessage = z.infer<typeof InComingMessageSchema>
 

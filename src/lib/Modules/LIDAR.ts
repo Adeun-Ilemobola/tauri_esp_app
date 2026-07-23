@@ -2,18 +2,14 @@ import z from "zod";
 import type { ModuleDefinitionType } from "../ModuleDefinitionSchema";
 
 export const PointSchema = z.object({
-  x: z.number().int(),
-  y: z.number().int(),
+  x: z.number().int().min(-90).max(90),
+  y: z.number().int().min(-90).max(90),
 });
 
 export const RangePointSchema = z.object({
   x: z.number().int(),
   y: z.number().int(),
   distant: z.number().int().nonnegative(),
-});
-
-const RangePointEventSchema = RangePointSchema.extend({
-  event_type: z.literal("RangPoint"),
 });
 
 export const LidarCommandTypeSchema = z.discriminatedUnion("command", [
@@ -33,7 +29,7 @@ export const LidarCommandTypeSchema = z.discriminatedUnion("command", [
   }),
   z.object({
     command: z.literal("SetStep"),
-    step: z.number().int().nonnegative(),
+    step: z.number().int().positive(),
   }),
   z.object({
     command: z.literal("ChangeMotorAngle"),
@@ -56,7 +52,7 @@ export const LidarEventSchema = z.discriminatedUnion("event_type", [
   z.object({
     event_type: z.literal("PointMap"),
     id: z.string(),
-    map: z.array(RangePointEventSchema),
+    map: z.array(RangePointSchema),
   }),
   z.object({
     event_type: z.literal("Target"),
@@ -84,6 +80,9 @@ export const LidarModule = z.object({
     }),
   }),
 });
+
+export type Point = z.infer<typeof PointSchema>;
+export type RangePoint = z.infer<typeof RangePointSchema>;
 
 export function lidarInitialBuild(
   id: string,
@@ -140,4 +139,32 @@ export function updateLidar(
         state: { ...module.state, state: event.state },
       };
   }
+}
+
+const lidarHeatmapColors = [
+  "#173F8A", // 0
+  "#1769C2", // 1
+  "#1598D4", // 2
+  "#18C6C8", // 3
+  "#27B878", // 4
+  "#66C94A", // 5
+  "#B5D93D", // 6
+  "#F2D63A", // 7
+  "#F59A32", // 8
+  "#ED5938", // 9
+  "#D93658", // 10
+];
+
+export const roiBorder = "#000000";
+export const GRID_BACKGROUND_COLOUR = "#18181b";
+export const DEFAULT_CELL_COLOUR = "#3f3f46";
+export const MAX_LIDAR_DISTANCE_MM = 4000;
+
+export function distanceToColour(mm: number): string {
+  const clampedMm = Math.max(0, Math.min(MAX_LIDAR_DISTANCE_MM, mm));
+  const colourIndex = Math.round(
+    (clampedMm / MAX_LIDAR_DISTANCE_MM) * (lidarHeatmapColors.length - 1),
+  );
+
+  return lidarHeatmapColors[colourIndex] ?? DEFAULT_CELL_COLOUR;
 }

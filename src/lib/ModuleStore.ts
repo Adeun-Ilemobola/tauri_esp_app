@@ -71,7 +71,7 @@ export const useModuleStore = create<ModuleStore>((set, get) => ({
 
       const nextModule = applyModuleEvent(module, event);
 
-      if (modulesEqual(module, nextModule)) {
+      if (module === nextModule) {
         return store;
       }
 
@@ -113,13 +113,6 @@ function applyModuleEvent(
     case "Rangefinder":
       return updateRangefinder(module, event.event);
   }
-}
-
-function modulesEqual(
-  previous: ModuleDefinitionType,
-  next: ModuleDefinitionType,
-): boolean {
-  return JSON.stringify(previous).trim() === JSON.stringify(next).trim();
 }
 
 function createModule(

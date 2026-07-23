@@ -1,5 +1,5 @@
 import { PointSchema } from "@/lib/ModuleEven";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import z from "zod";
 import { Input } from "./ui/input";
 
@@ -17,24 +17,26 @@ type PointInputProp = {
 
 
 export function PointInput({ point, Change , disabled =false }: PointInputProp) {
-    const [isFocused, setIsFocused] = useState(false);
     const [draftX, setDraftX] = useState(`${point.x}`)
     const [draftY, setDraftY] = useState(`${point.y}`)
 
+    useEffect(() => setDraftX(`${point.x}`), [point.x])
+    useEffect(() => setDraftY(`${point.y}`), [point.y])
 
     function changeWithText(axis: keyof Point) {
         const draftXAxis = axis === "x" ? draftX : draftY;
-        const toNumber = parseInt(draftXAxis) || 0;
-        if (toNumber) {
-            const clap = Math.min(Math.max(toNumber, -90), 90);
-            Change({
-                [axis]: clap
-            })
-            if (axis === "x") {
-                setDraftX(`${clap}`)
-            } else {
-                setDraftY(`${clap}`)
-            }
+        const toNumber = Number.parseInt(draftXAxis, 10);
+        const clamped = Number.isNaN(toNumber)
+            ? point[axis]
+            : Math.min(Math.max(toNumber, -90), 90);
+
+        Change({
+            [axis]: clamped
+        })
+        if (axis === "x") {
+            setDraftX(`${clamped}`)
+        } else {
+            setDraftY(`${clamped}`)
         }
     }
 
@@ -80,12 +82,7 @@ export function PointInput({ point, Change , disabled =false }: PointInputProp) 
                     min={-90}
                     value={draftX}
                     className="w-14 text-center"
-                    onFocus={() => {
-                        setIsFocused(true)
-                        changeWithText("x")
-                    }}
                     onBlur={() => {
-                        setIsFocused(false)
                         changeWithText("x")
 
                     }}
@@ -118,12 +115,7 @@ export function PointInput({ point, Change , disabled =false }: PointInputProp) 
                     min={-90}
                     value={draftY}
                     className="w-14 text-center"
-                    onFocus={() => {
-                        setIsFocused(true)
-                        changeWithText("y")
-                    }}
                     onBlur={() => {
-                        setIsFocused(false)
                         changeWithText("y")
 
                     }}

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { PointSchema } from "@/lib/ModuleEven"
 import { useModuleStore } from "@/lib/ModuleStore"
 import { CubeIcon } from "@phosphor-icons/react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import z from "zod"
 
 
@@ -18,7 +18,23 @@ export default function Dashboard() {
   const servoX = useModuleStore((state) => selectModule(state, "servo_x", "Servo"))
   const servoY = useModuleStore((state) => selectModule(state, "servo_y", "Servo"))
   const sendCommand = useModuleStore((state) => state.sendCommand)
+  const [pointMax, setPointMax] = useState<Point>(() =>
+    lidar?.state.ROI.max ?? { x: 0, y: 0 },
+  )
+  const [pointMin, setPointMin] = useState<Point>(() =>
+    lidar?.state.ROI.min ?? { x: 0, y: 0 },
+  )
 
+  useEffect(() => {
+    if (!lidar) return
+    setPointMax(lidar.state.ROI.max)
+    setPointMin(lidar.state.ROI.min)
+  }, [
+    lidar?.state.ROI.max.x,
+    lidar?.state.ROI.max.y,
+    lidar?.state.ROI.min.x,
+    lidar?.state.ROI.min.y,
+  ])
 
   if (!lidar || !servoX || !servoY) {
     return (
@@ -37,11 +53,6 @@ export default function Dashboard() {
       </div>
     )
   }
-
-  const [pointMax, setPointMax] = useState<Point>(lidar.state.ROI.max)
-
-  const [pointMin, setPointMin] = useState<Point>(lidar.state.ROI.min)
-
 
   return (
     <div className="flex flex-col gap-2 h-full min-h-0 w-full p-1.5">
@@ -124,25 +135,28 @@ export default function Dashboard() {
       <Grid
         move_point={(p) => {
           sendCommand({
-            id:lidar.id,
-            module_type:"Lidar",
-            payload:{
-              command:"MovePos",
-              p:p
+            id: lidar.id,
+            module_type: "Lidar",
+            payload: {
+              command: "MovePos",
+              p,
             }
           })
 
         }}
         max={pointMax}
         min={pointMin}
-        setRoi={() => {
+        map={lidar.state.map}
+        setRoi={(nextMin, nextMax) => {
+          setPointMin(nextMin)
+          setPointMax(nextMax)
           sendCommand({
-            id:lidar.id,
-            module_type:"Lidar",
-            payload:{
-              command:"Roi",
-              min:pointMin,
-              max:pointMax
+            id: lidar.id,
+            module_type: "Lidar",
+            payload: {
+              command: "Roi",
+              min: nextMin,
+              max: nextMax,
             }
           })
 

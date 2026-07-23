@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useListenStore } from "@/lib/ListenStore";
-import { PointSchema } from "@/lib/ModuleEven";
 import { Point } from "@/components/Grid";
 import { PointInput } from "@/components/PointInput";
 
@@ -24,11 +23,6 @@ function App() {
   const [name, setName] = useState("");
 
   const [ports, setPort] = useState<string[]>([])
-
-  const [maxPoint, setMaxPoint] = useState<Point>({
-    x: 0,
-    y: 0
-  })
 
   const [minPoint, setMinPoint] = useState<Point>({
     x: 0,
